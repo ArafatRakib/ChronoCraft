@@ -1,0 +1,68 @@
+import { TimerPreset } from '../types';
+
+export const TIMER_PRESETS: TimerPreset[] = [
+  {
+    id: 'pomodoro',
+    title: 'Pomodoro Focus',
+    category: 'Productivity',
+    durationMs: 25 * 60 * 1000,
+    color: 'emerald',
+    iconName: 'Brain',
+  },
+  {
+    id: 'short-break',
+    title: 'Short Break',
+    category: 'Productivity',
+    durationMs: 5 * 60 * 1000,
+    color: 'blue',
+    iconName: 'Coffee',
+  },
+  {
+    id: 'long-break',
+    title: 'Long Break',
+    category: 'Productivity',
+    durationMs: 15 * 60 * 1000,
+    color: 'indigo',
+    iconName: 'Armchair',
+  },
+  {
+    id: 'meditation',
+    title: '10m Mindfulness',
+    category: 'Wellness',
+    durationMs: 10 * 60 * 1000,
+    color: 'violet',
+    iconName: 'Sparkles',
+  },
+  {
+    id: 'tea-timer',
+    title: 'Tea Steeping',
+    category: 'Kitchen',
+    durationMs: 3 * 60 * 1000 + 30 * 1000,
+    color: 'amber',
+    iconName: 'CupSoda',
+  },
+  {
+    id: 'boil-egg',
+    title: 'Soft Boiled Egg',
+    category: 'Kitchen',
+    durationMs: 6 * 60 * 1000 + 30 * 1000,
+    color: 'coral',
+    iconName: 'Utensils',
+  },
+  {
+    id: 'hiit-work',
+    title: 'HIIT High Intensity',
+    category: 'Fitness',
+    durationMs: 45 * 1000,
+    color: 'rose',
+    iconName: 'Flame',
+  },
+  {
+    id: 'hiit-rest',
+    title: 'HIIT Rest Period',
+    category: 'Fitness',
+    durationMs: 15 * 1000,
+    color: 'cyan',
+    iconName: 'HeartPulse',
+  },
+];

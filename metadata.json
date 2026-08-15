@@ -1,0 +1,6 @@
+{
+  "name": "Multi Stopwatch & Timer",
+  "description": "A modern, customizable multi-stopwatch and multi-timer web application with color themes, laptimes, custom alarm sounds, presets, and light/dark theme support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

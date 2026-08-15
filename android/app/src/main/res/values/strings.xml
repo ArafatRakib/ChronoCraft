@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ChronoCraft</string>
+    <string name="title_activity_main">ChronoCraft</string>
+    <string name="package_name">com.arafat.chrono</string>
+    <string name="custom_url_scheme">com.arafat.chrono</string>
+</resources>
