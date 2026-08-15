@@ -3,8 +3,11 @@ name: Build & Release Android App
 on:
   push:
     tags:
-      - 'v*' # Triggers on Git tags like v1.0.0
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -21,10 +24,10 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install Node Dependencies
+      - name: Install Dependencies
         run: npm ci
 
-      - name: Build Web Dist
+      - name: Build Web App
         run: npm run build
 
       - name: Setup Java JDK
@@ -39,11 +42,20 @@ jobs:
       - name: Sync Capacitor Android
         run: npx cap sync android
 
-      - name: Decode Release Keystore
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x android/gradlew
+
+      - name: Decode Release Keystore (if provided)
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          HAS_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
         run: |
           echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
 
-      - name: Build Release APK & AAB
+      - name: Build Signed Release APK & AAB
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          HAS_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
         working-directory: android
         run: |
           ./gradlew assembleRelease bundleRelease \
@@ -52,20 +64,26 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.RELEASE_KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.RELEASE_KEY_PASSWORD }}"
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: chronocraft-binaries
-          path: |
-            android/app/build/outputs/apk/release/app-release.apk
-            android/app/build/outputs/bundle/release/app-release.aab
+      - name: Fallback: Build APK (if no keystore secret)
+        if: env.HAS_KEYSTORE != 'true'
+        env:
+          HAS_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
+        working-directory: android
+        run: |
+          ./gradlew assembleRelease
 
-      - name: Create GitHub Release
+      - name: Find & Package APK/AAB Files
+        run: |
+          mkdir -p release-output
+          find android/app/build/outputs -type f \( -name "*.apk" -o -name "*.aab" \) -exec cp {} release-output/ \;
+          ls -la release-output
+
+      - name: Upload Release Binaries to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            android/app/build/outputs/apk/release/app-release.apk
-            android/app/build/outputs/bundle/release/app-release.aab
+          files: release-output/*
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
