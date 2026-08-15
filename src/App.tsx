@@ -468,92 +468,167 @@ export default function App() {
       />
 
       {/* Sub Toolbar: Search, Color Filter & Quick Create Bar */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full pt-4 sm:pt-6 pb-2">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 bg-white/70 dark:bg-slate-900/70 p-2.5 sm:p-3 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm backdrop-blur">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full pt-3 sm:pt-6 pb-2">
+        <div className="flex flex-col gap-2.5 bg-white/70 dark:bg-slate-900/70 p-2.5 sm:p-3 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm backdrop-blur">
           
-          {/* Search Field */}
-          <div className="relative flex-1 min-w-0">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search stopwatches & timers..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-transparent"
-            />
+          {/* Top Row: Search + Desktop Inline Controls */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+            {/* Search Field */}
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search stopwatches & timers..."
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-transparent"
+              />
+            </div>
+
+            {/* Desktop Controls (Inline on screens >= 640px) */}
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold pl-1 shrink-0">
+                <Filter className="w-3.5 h-3.5" />
+                <span>Color:</span>
+              </div>
+
+              <select
+                value={selectedColorFilter}
+                onChange={(e) => setSelectedColorFilter(e.target.value)}
+                className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 focus:outline-none cursor-pointer shrink-0"
+              >
+                <option value="all">All Colors</option>
+                <option value="blue">Ocean Blue</option>
+                <option value="emerald">Emerald Green</option>
+                <option value="violet">Royal Violet</option>
+                <option value="rose">Rose Pink</option>
+                <option value="amber">Amber Gold</option>
+                <option value="cyan">Cyan Teal</option>
+                <option value="indigo">Indigo Night</option>
+                <option value="coral">Warm Coral</option>
+              </select>
+
+              {/* Layout Grid / Compact Toggle */}
+              <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
+                <button
+                  onClick={() => setViewLayout('grid')}
+                  className={`p-1.5 rounded-lg text-xs transition-colors ${
+                    viewLayout === 'grid'
+                      ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
+                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                  }`}
+                  title="Grid Layout"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewLayout('compact')}
+                  className={`p-1.5 rounded-lg text-xs transition-colors ${
+                    viewLayout === 'compact'
+                      ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
+                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                  }`}
+                  title="Compact Layout"
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+
+              <button
+                onClick={() => {
+                  setCreateInitialType('stopwatch');
+                  setIsCreateOpen(true);
+                }}
+                className="py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold flex items-center gap-1 transition-colors whitespace-nowrap"
+              >
+                <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                <span>+ Stopwatch</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCreateInitialType('timer');
+                  setIsCreateOpen(true);
+                }}
+                className="py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1 transition-all shadow-sm whitespace-nowrap"
+              >
+                <TimerIcon className="w-3.5 h-3.5" />
+                <span>+ Timer</span>
+              </button>
+            </div>
           </div>
 
-          {/* Color Filter, Layout Switches & Quick Add Actions */}
-          <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap no-scrollbar overflow-x-auto">
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold pl-1 shrink-0">
-              <Filter className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Color:</span>
+          {/* Mobile-Only Controls (< 640px) */}
+          <div className="sm:hidden flex flex-col gap-2 pt-1">
+            {/* Filter & Layout Switcher Row */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <select
+                  value={selectedColorFilter}
+                  onChange={(e) => setSelectedColorFilter(e.target.value)}
+                  className="w-full px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 focus:outline-none cursor-pointer truncate"
+                >
+                  <option value="all">All Colors</option>
+                  <option value="blue">Ocean Blue</option>
+                  <option value="emerald">Emerald Green</option>
+                  <option value="violet">Royal Violet</option>
+                  <option value="rose">Rose Pink</option>
+                  <option value="amber">Amber Gold</option>
+                  <option value="cyan">Cyan Teal</option>
+                  <option value="indigo">Indigo Night</option>
+                  <option value="coral">Warm Coral</option>
+                </select>
+              </div>
+
+              <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
+                <button
+                  onClick={() => setViewLayout('grid')}
+                  className={`p-1.5 rounded-lg text-xs transition-colors ${
+                    viewLayout === 'grid'
+                      ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
+                      : 'text-slate-400'
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewLayout('compact')}
+                  className={`p-1.5 rounded-lg text-xs transition-colors ${
+                    viewLayout === 'compact'
+                      ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
+                      : 'text-slate-400'
+                  }`}
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
-            <select
-              value={selectedColorFilter}
-              onChange={(e) => setSelectedColorFilter(e.target.value)}
-              className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 focus:outline-none cursor-pointer shrink-0"
-            >
-              <option value="all">All Colors</option>
-              <option value="blue">Ocean Blue</option>
-              <option value="emerald">Emerald Green</option>
-              <option value="violet">Royal Violet</option>
-              <option value="rose">Rose Pink</option>
-              <option value="amber">Amber Gold</option>
-              <option value="cyan">Cyan Teal</option>
-              <option value="indigo">Indigo Night</option>
-              <option value="coral">Warm Coral</option>
-            </select>
-
-            {/* Layout Grid / Compact Toggle */}
-            <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
+            {/* Dedicated Second Row for Add Stopwatch & Add Timer (Side-by-Side 50/50) */}
+            <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => setViewLayout('grid')}
-                className={`p-1.5 rounded-lg text-xs transition-colors ${
-                  viewLayout === 'grid'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
-                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
-                }`}
-                title="Grid Layout"
+                onClick={() => {
+                  setCreateInitialType('stopwatch');
+                  setIsCreateOpen(true);
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
               >
-                <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Clock className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <span className="truncate">+ Stopwatch</span>
               </button>
+
               <button
-                onClick={() => setViewLayout('compact')}
-                className={`p-1.5 rounded-lg text-xs transition-colors ${
-                  viewLayout === 'compact'
-                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold'
-                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
-                }`}
-                title="Compact Layout"
+                onClick={() => {
+                  setCreateInitialType('timer');
+                  setIsCreateOpen(true);
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm shadow-indigo-600/20"
               >
-                <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <TimerIcon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">+ Timer</span>
               </button>
             </div>
-
-            {/* Quick Add Actions */}
-            <button
-              onClick={() => {
-                setCreateInitialType('stopwatch');
-                setIsCreateOpen(true);
-              }}
-              className="py-1.5 px-2.5 sm:py-2 sm:px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold flex items-center gap-1 transition-colors whitespace-nowrap shrink-0"
-            >
-              <Clock className="w-3.5 h-3.5 text-indigo-500" />
-              <span>+ Stopwatch</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setCreateInitialType('timer');
-                setIsCreateOpen(true);
-              }}
-              className="py-1.5 px-2.5 sm:py-2 sm:px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1 transition-all shadow-sm whitespace-nowrap shrink-0"
-            >
-              <TimerIcon className="w-3.5 h-3.5" />
-              <span>+ Timer</span>
-            </button>
           </div>
         </div>
       </div>
