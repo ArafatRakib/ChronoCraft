@@ -14,3 +14,5 @@ android/.gradle/
 android/local.properties
 android/captures/
 android/.idea/
+keystore_base64.txt
+release.keystore
