@@ -383,20 +383,20 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
       {/* Expandable Laps Drawer */}
       {stopwatch.laps.length > 0 && !isCompact && (
         <div className="border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50">
-          <div className="px-5 py-2.5 flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
+          <div className="px-3 sm:px-4 py-2.5 flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
             <button 
               onClick={() => setShowLaps(!showLaps)} 
-              className="flex items-center gap-1.5 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+              className="flex items-center gap-1.5 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer select-none font-semibold"
             >
               <Clock className="w-3.5 h-3.5" />
               <span>Laps History ({stopwatch.laps.length})</span>
-              {showLaps ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              {showLaps ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
             </button>
 
             {showLaps && (
               <button
                 onClick={copyLapsToClipboard}
-                className="flex items-center gap-1 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                className="flex items-center gap-1 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
                 title="Copy laps text"
               >
                 <Copy className="w-3 h-3" />
@@ -406,11 +406,11 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
           </div>
 
           {showLaps && (
-            <div className="max-h-48 overflow-y-auto px-5 pb-3 pt-1 space-y-1.5 text-xs font-mono">
-              <div className="grid grid-cols-3 text-slate-400 dark:text-slate-500 font-sans text-[11px] font-semibold border-b border-slate-200/50 dark:border-slate-800/50 pb-1 mb-1">
-                <span>Lap #</span>
-                <span className="text-center">Lap Time</span>
-                <span className="text-right">Total Split</span>
+            <div className="max-h-48 overflow-y-auto px-3 sm:px-4 pb-3 pt-0.5 space-y-1 text-xs">
+              <div className="flex items-center justify-between text-slate-400 dark:text-slate-500 font-sans text-[11px] font-semibold border-b border-slate-200/50 dark:border-slate-800/50 pb-1 mb-1 px-1">
+                <span className="w-16 shrink-0 text-left">Lap</span>
+                <span className="flex-1 text-center">Lap Split</span>
+                <span className="w-20 shrink-0 text-right">Total Split</span>
               </div>
               {[...stopwatch.laps].reverse().map((lap) => {
                 const isFastest = lap.id === fastestLapId;
@@ -421,23 +421,31 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
                 return (
                   <div 
                     key={lap.id} 
-                    className={`grid grid-cols-3 py-1 px-2 rounded ${
+                    className={`flex items-center justify-between py-1 px-1.5 rounded-md transition-colors ${
                       isFastest 
                         ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-200/50 dark:border-emerald-800/40' 
                         : isSlowest 
-                        ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/50 dark:border-rose-800/40' 
+                        ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-semibold border border-rose-200/50 dark:border-rose-800/40' 
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/40 dark:hover:bg-slate-800/40'
                     }`}
                   >
-                    <span className="font-sans font-medium flex items-center gap-1">
-                      Lap {lap.number}
-                      {isFastest && <span className="text-[10px] bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-100 px-1 rounded">Fastest</span>}
-                      {isSlowest && <span className="text-[10px] bg-rose-200 dark:bg-rose-800 text-rose-800 dark:text-rose-100 px-1 rounded">Slowest</span>}
-                    </span>
-                    <span className="text-center">
+                    <div className="w-16 shrink-0 flex items-center gap-1 min-w-0">
+                      <span className="font-sans font-medium text-xs whitespace-nowrap">Lap {lap.number}</span>
+                      {isFastest && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-100 px-1 py-0.2 rounded shrink-0">
+                          Fast
+                        </span>
+                      )}
+                      {isSlowest && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider bg-rose-200 dark:bg-rose-800 text-rose-800 dark:text-rose-100 px-1 py-0.2 rounded shrink-0">
+                          Slow
+                        </span>
+                      )}
+                    </div>
+                    <span className="flex-1 text-center font-mono tabular-nums text-xs whitespace-nowrap px-1">
                       {lTime.minutes}:{lTime.seconds}.{lTime.centiseconds}
                     </span>
-                    <span className="text-right text-slate-500 dark:text-slate-400">
+                    <span className="w-20 shrink-0 text-right font-mono tabular-nums text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                       {tTime.minutes}:{tTime.seconds}.{tTime.centiseconds}
                     </span>
                   </div>
