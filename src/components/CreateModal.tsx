@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ColorName, SoundPreset, TimerPreset } from '../types';
-import { COLOR_KEYS, COLOR_THEMES } from '../constants/colors';
+import { COLOR_KEYS, COLOR_THEMES, getColorTheme } from '../constants/colors';
 import { TIMER_PRESETS } from '../constants/presets';
 import { ColorPicker } from './ColorPicker';
 import { soundEngine } from '../utils/audio';
@@ -160,7 +160,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {TIMER_PRESETS.map((preset) => {
-                  const theme = COLOR_THEMES[preset.color];
+                  const theme = getColorTheme(preset.color);
                   return (
                     <button
                       key={preset.id}

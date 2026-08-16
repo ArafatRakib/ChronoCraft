@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { StopwatchItem, TimerItem } from '../types';
-import { COLOR_THEMES } from '../constants/colors';
+import { getColorTheme } from '../constants/colors';
 import { formatTime } from '../utils/timeFormatter';
 import { 
   X, 
@@ -72,7 +72,7 @@ export const FocusModal: React.FC<FocusModalProps> = ({
 
   if (!isOpen || !item) return null;
 
-  const theme = COLOR_THEMES[item.color] || COLOR_THEMES.blue;
+  const theme = getColorTheme(item.color);
   const displayMs = isStopwatch ? elapsedMs : remainingMs;
   const time = formatTime(displayMs);
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StopwatchItem, ColorName } from '../types';
-import { COLOR_THEMES } from '../constants/colors';
+import { getColorTheme } from '../constants/colors';
 import { formatTime } from '../utils/timeFormatter';
 import { ColorPicker } from './ColorPicker';
 import { 
@@ -53,8 +53,26 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showLaps, setShowLaps] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({ right: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
   const lastTapRef = useRef<number>(0);
+
+  // Smart popover position clamping so menus never clip outside screen boundaries
+  useEffect(() => {
+    if ((showMenu || showColorPicker) && menuRef.current) {
+      const rect = menuRef.current.getBoundingClientRect();
+      const popoverWidth = showColorPicker ? 240 : 180;
+      const leftEdge = rect.right - popoverWidth;
+
+      if (leftEdge < 12) {
+        // Leaning too far left offscreen: shift rightward
+        const shiftRight = 12 - leftEdge;
+        setMenuStyle({ right: `-${shiftRight}px`, left: 'auto' });
+      } else {
+        setMenuStyle({ right: 0, left: 'auto' });
+      }
+    }
+  }, [showMenu, showColorPicker]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -93,7 +111,7 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
     onOpenFocus(stopwatch.id);
   };
 
-  const theme = COLOR_THEMES[stopwatch.color] || COLOR_THEMES.blue;
+  const theme = getColorTheme(stopwatch.color);
   const time = formatTime(elapsedMs);
 
   const handleSaveName = () => {
@@ -211,7 +229,10 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
           </button>
 
           {showMenu && (
-            <div className="absolute right-0 top-full mt-1.5 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-40 sm:w-44 animate-in fade-in zoom-in-95 space-y-0.5 text-xs font-medium no-focus-trigger">
+            <div 
+              style={menuStyle}
+              className="absolute top-full mt-1.5 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-44 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 space-y-0.5 text-xs font-medium no-focus-trigger"
+            >
               <button
                 onClick={() => {
                   setShowMenu(false);
@@ -261,13 +282,18 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
           )}
 
           {showColorPicker && (
-            <div className="absolute right-0 top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-48 animate-in fade-in zoom-in-95 no-focus-trigger">
-              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Color Theme</div>
+            <div 
+              style={menuStyle}
+              className="absolute top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-56 sm:w-60 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 no-focus-trigger"
+            >
+              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Color Palette</span>
+              </div>
               <ColorPicker
                 selectedColor={stopwatch.color}
                 onChange={(color) => {
                   onUpdateColor(stopwatch.id, color);
-                  setShowColorPicker(false);
                 }}
                 size="sm"
               />

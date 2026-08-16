@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { TimerItem, ColorName, SoundPreset } from '../types';
-import { COLOR_THEMES } from '../constants/colors';
+import { getColorTheme } from '../constants/colors';
 import { formatTime } from '../utils/timeFormatter';
 import { soundEngine } from '../utils/audio';
 import { ColorPicker } from './ColorPicker';
@@ -63,8 +63,26 @@ export const TimerCard: React.FC<TimerCardProps> = ({
   const [showMenu, setShowMenu] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showSoundPicker, setShowSoundPicker] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({ right: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
   const lastTapRef = useRef<number>(0);
+
+  // Smart popover position clamping so menus never clip outside screen boundaries
+  useEffect(() => {
+    if ((showMenu || showColorPicker || showSoundPicker) && menuRef.current) {
+      const rect = menuRef.current.getBoundingClientRect();
+      const popoverWidth = showSoundPicker ? 240 : showColorPicker ? 240 : 190;
+      const leftEdge = rect.right - popoverWidth;
+
+      if (leftEdge < 12) {
+        // Leaning too far left offscreen: shift rightward
+        const shiftRight = 12 - leftEdge;
+        setMenuStyle({ right: `-${shiftRight}px`, left: 'auto' });
+      } else {
+        setMenuStyle({ right: 0, left: 'auto' });
+      }
+    }
+  }, [showMenu, showColorPicker, showSoundPicker]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -104,7 +122,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
     onOpenFocus(timer.id);
   };
 
-  const theme = COLOR_THEMES[timer.color] || COLOR_THEMES.blue;
+  const theme = getColorTheme(timer.color);
   const time = formatTime(remainingMs);
 
   // Math for SVG progress ring
@@ -202,7 +220,10 @@ export const TimerCard: React.FC<TimerCardProps> = ({
 
           {/* More Options Dropdown */}
           {showMenu && (
-            <div className="absolute right-0 top-full mt-1.5 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-48 sm:w-52 animate-in fade-in zoom-in-95 space-y-0.5 text-xs font-medium no-focus-trigger">
+            <div 
+              style={menuStyle}
+              className="absolute top-full mt-1.5 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-48 sm:w-52 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 space-y-0.5 text-xs font-medium no-focus-trigger"
+            >
               <button
                 onClick={() => {
                   setShowMenu(false);
@@ -269,7 +290,10 @@ export const TimerCard: React.FC<TimerCardProps> = ({
 
           {/* Sound Preset Picker Submenu */}
           {showSoundPicker && (
-            <div className="absolute right-0 top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-56 sm:w-60 animate-in fade-in zoom-in-95 no-focus-trigger">
+            <div 
+              style={menuStyle}
+              className="absolute top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-56 sm:w-60 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 no-focus-trigger"
+            >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
                   <Volume2 className="w-3.5 h-3.5 text-indigo-500" />
@@ -334,13 +358,18 @@ export const TimerCard: React.FC<TimerCardProps> = ({
 
           {/* Color Palette Popover */}
           {showColorPicker && (
-            <div className="absolute right-0 top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-48 animate-in fade-in zoom-in-95 no-focus-trigger">
-              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Color Theme</div>
+            <div 
+              style={menuStyle}
+              className="absolute top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-56 sm:w-60 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 no-focus-trigger"
+            >
+              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Color Palette</span>
+              </div>
               <ColorPicker
                 selectedColor={timer.color}
                 onChange={(color) => {
                   onUpdateColor(timer.id, color);
-                  setShowColorPicker(false);
                 }}
                 size="sm"
               />

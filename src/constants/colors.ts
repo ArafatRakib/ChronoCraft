@@ -101,3 +101,24 @@ export const COLOR_KEYS: ColorName[] = [
   'indigo',
   'coral',
 ];
+
+export const getColorTheme = (color: string): ColorTheme => {
+  if (color && COLOR_THEMES[color]) {
+    return COLOR_THEMES[color];
+  }
+  
+  // Clean up hex representation
+  const hex = color && color.startsWith('#') ? color : `#${color || '6366f1'}`;
+  
+  return {
+    name: hex,
+    label: 'Custom Color',
+    bg: 'bg-slate-500/10 dark:bg-slate-950/30',
+    bgLight: 'bg-slate-50 dark:bg-slate-900/20',
+    border: 'border-slate-200 dark:border-slate-800/60',
+    text: 'text-slate-700 dark:text-slate-200',
+    accentHex: hex,
+    glow: 'shadow-indigo-500/20 dark:shadow-indigo-500/10',
+    badge: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+  };
+};

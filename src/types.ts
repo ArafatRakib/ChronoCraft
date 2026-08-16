@@ -6,7 +6,8 @@ export type ColorName =
   | 'amber' 
   | 'cyan' 
   | 'indigo' 
-  | 'coral';
+  | 'coral'
+  | string;
 
 export interface ColorTheme {
   name: ColorName;

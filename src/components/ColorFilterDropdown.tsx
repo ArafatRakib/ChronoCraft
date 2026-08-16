@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ColorName } from '../types';
-import { COLOR_THEMES } from '../constants/colors';
+import { COLOR_KEYS, COLOR_THEMES, getColorTheme } from '../constants/colors';
 import { ChevronDown, Check } from 'lucide-react';
 
 interface ColorFilterDropdownProps {
@@ -8,18 +7,6 @@ interface ColorFilterDropdownProps {
   onSelectColor: (color: string) => void;
   className?: string;
 }
-
-const COLOR_OPTIONS: { key: string; label: string; colorHex?: string }[] = [
-  { key: 'all', label: 'All Colors' },
-  { key: 'blue', label: COLOR_THEMES.blue.label, colorHex: COLOR_THEMES.blue.accentHex },
-  { key: 'emerald', label: COLOR_THEMES.emerald.label, colorHex: COLOR_THEMES.emerald.accentHex },
-  { key: 'violet', label: COLOR_THEMES.violet.label, colorHex: COLOR_THEMES.violet.accentHex },
-  { key: 'rose', label: COLOR_THEMES.rose.label, colorHex: COLOR_THEMES.rose.accentHex },
-  { key: 'amber', label: COLOR_THEMES.amber.label, colorHex: COLOR_THEMES.amber.accentHex },
-  { key: 'cyan', label: COLOR_THEMES.cyan.label, colorHex: COLOR_THEMES.cyan.accentHex },
-  { key: 'indigo', label: COLOR_THEMES.indigo.label, colorHex: COLOR_THEMES.indigo.accentHex },
-  { key: 'coral', label: COLOR_THEMES.coral.label, colorHex: COLOR_THEMES.coral.accentHex },
-];
 
 export const ColorFilterDropdown: React.FC<ColorFilterDropdownProps> = ({
   selectedColor,
@@ -29,8 +16,30 @@ export const ColorFilterDropdown: React.FC<ColorFilterDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const presetOptions = COLOR_KEYS.map((key) => ({
+    key,
+    label: COLOR_THEMES[key].label,
+    colorHex: COLOR_THEMES[key].accentHex,
+  }));
+
+  const allOptions = [
+    { key: 'all', label: 'All Colors', colorHex: undefined },
+    ...presetOptions,
+  ];
+
+  // If selectedColor is a custom hex not in presets, add it
+  const isCustom = selectedColor !== 'all' && !COLOR_KEYS.includes(selectedColor as any);
+  if (isCustom) {
+    const customTheme = getColorTheme(selectedColor);
+    allOptions.push({
+      key: selectedColor,
+      label: customTheme.label,
+      colorHex: customTheme.accentHex,
+    });
+  }
+
   const selectedOption =
-    COLOR_OPTIONS.find((opt) => opt.key === selectedColor) || COLOR_OPTIONS[0];
+    allOptions.find((opt) => opt.key === selectedColor) || allOptions[0];
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -78,7 +87,7 @@ export const ColorFilterDropdown: React.FC<ColorFilterDropdownProps> = ({
           </div>
 
           <div className="max-h-60 overflow-y-auto space-y-0.5 pr-0.5">
-            {COLOR_OPTIONS.map((option) => {
+            {allOptions.map((option) => {
               const isSelected = option.key === selectedColor;
 
               return (
@@ -119,3 +128,4 @@ export const ColorFilterDropdown: React.FC<ColorFilterDropdownProps> = ({
     </div>
   );
 };
+
