@@ -112,7 +112,7 @@ export default function App() {
             if (remaining <= 0) {
               hasChanges = true;
               if (!isMuted && !firedTimerIds.current.has(t.id)) {
-                soundEngine.playAlert(t.soundAlert);
+                soundEngine.startAlarm(t.id, t.soundAlert, t.soundRepeat !== undefined ? t.soundRepeat : 3);
                 firedTimerIds.current.add(t.id);
               }
 
@@ -233,6 +233,7 @@ export default function App() {
 
   // Timer handlers
   const handleStartTimer = (id: string) => {
+    soundEngine.stopAlarm(id);
     firedTimerIds.current.delete(id);
     setTimers((prev) =>
       prev.map((t) =>
@@ -249,6 +250,7 @@ export default function App() {
   };
 
   const handlePauseTimer = (id: string) => {
+    soundEngine.stopAlarm(id);
     setTimers((prev) =>
       prev.map((t) => {
         if (t.id === id && t.isRunning && t.startedAt) {
@@ -266,6 +268,7 @@ export default function App() {
   };
 
   const handleResetTimer = (id: string) => {
+    soundEngine.stopAlarm(id);
     firedTimerIds.current.delete(id);
     setTimers((prev) =>
       prev.map((t) =>
@@ -283,6 +286,8 @@ export default function App() {
   };
 
   const handleAddExtraTime = (id: string, extraMs: number) => {
+    soundEngine.stopAlarm(id);
+    firedTimerIds.current.delete(id);
     setTimers((prev) =>
       prev.map((t) => {
         if (t.id === id) {
@@ -315,7 +320,13 @@ export default function App() {
     setTimers((prev) => prev.map((t) => (t.id === id ? { ...t, soundAlert } : t)));
   };
 
+  const handleUpdateTimerRepeat = (id: string, soundRepeat: number) => {
+    setTimers((prev) => prev.map((t) => (t.id === id ? { ...t, soundRepeat } : t)));
+  };
+
   const handleDeleteTimer = (id: string) => {
+    soundEngine.stopAlarm(id);
+    firedTimerIds.current.delete(id);
     setTimers((prev) => prev.filter((t) => t.id !== id));
     if (focusId === id) setFocusId(null);
   };
@@ -335,7 +346,13 @@ export default function App() {
     setStopwatches((prev) => [newSw, ...prev]);
   };
 
-  const handleCreateTimer = (name: string, durationMs: number, color: ColorName, soundAlert: SoundPreset) => {
+  const handleCreateTimer = (
+    name: string, 
+    durationMs: number, 
+    color: ColorName, 
+    soundAlert: SoundPreset, 
+    soundRepeat: number = 3
+  ) => {
     const newTimer: TimerItem = {
       id: `timer-${Date.now()}`,
       name,
@@ -345,6 +362,7 @@ export default function App() {
       duration: durationMs,
       remainingTime: durationMs,
       soundAlert,
+      soundRepeat,
       isCompleted: false,
       createdAt: Date.now(),
     };
@@ -705,6 +723,7 @@ export default function App() {
                       onUpdateName={handleUpdateTimerName}
                       onUpdateColor={handleUpdateTimerColor}
                       onUpdateSound={handleUpdateTimerSound}
+                      onUpdateRepeat={handleUpdateTimerRepeat}
                       onDelete={handleDeleteTimer}
                       onOpenFocus={setFocusId}
                       isCompact={viewLayout === 'compact'}

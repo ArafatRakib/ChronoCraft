@@ -48,6 +48,7 @@ export interface TimerItem {
   duration: number; // target duration in ms
   remainingTime: number; // remaining duration in ms when paused
   soundAlert: SoundPreset;
+  soundRepeat?: number; // 1 = once, 3 = 3x, 5 = 5x, 0 = continuous loop until dismissed
   isCompleted: boolean;
   createdAt: number;
 }

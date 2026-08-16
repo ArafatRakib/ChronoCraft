@@ -20,7 +20,7 @@ interface CreateModalProps {
   onClose: () => void;
   initialType?: 'stopwatch' | 'timer';
   onCreateStopwatch: (name: string, color: ColorName) => void;
-  onCreateTimer: (name: string, durationMs: number, color: ColorName, sound: SoundPreset) => void;
+  onCreateTimer: (name: string, durationMs: number, color: ColorName, sound: SoundPreset, soundRepeat?: number) => void;
 }
 
 export const CreateModal: React.FC<CreateModalProps> = ({
@@ -34,6 +34,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
   const [name, setName] = useState('');
   const [color, setColor] = useState<ColorName>('blue');
   const [sound, setSound] = useState<SoundPreset>('chime');
+  const [soundRepeat, setSoundRepeat] = useState<number>(3);
 
   // Custom duration state for Timer
   const [hours, setHours] = useState(0);
@@ -47,6 +48,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
       setName('');
       setColor('blue');
       setSound('chime');
+      setSoundRepeat(3);
       setHours(0);
       setMinutes(5);
       setSeconds(0);
@@ -80,7 +82,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
         return;
       }
       const finalName = name.trim() || `${minutes}m Timer`;
-      onCreateTimer(finalName, durationMs, color, sound);
+      onCreateTimer(finalName, durationMs, color, sound, soundRepeat);
     }
     onClose();
     // Reset defaults
@@ -285,6 +287,34 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                     {sound === snd && <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />}
                   </button>
                 ))}
+              </div>
+
+              {/* Sound Repeat Setting */}
+              <div className="mt-3">
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
+                  Alarm Repeat Frequency
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { label: 'Play Once', val: 1 },
+                    { label: 'Repeat 3x', val: 3 },
+                    { label: 'Repeat 5x', val: 5 },
+                    { label: 'Loop (Until Stop)', val: 0 },
+                  ].map((opt) => (
+                    <button
+                      key={opt.val}
+                      type="button"
+                      onClick={() => setSoundRepeat(opt.val)}
+                      className={`py-2 px-2 rounded-xl border text-xs font-medium text-center transition-all ${
+                        soundRepeat === opt.val
+                          ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 font-bold'
+                          : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}

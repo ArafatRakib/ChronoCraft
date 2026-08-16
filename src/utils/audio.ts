@@ -17,6 +17,9 @@ class SoundEngine {
     return this.ctx;
   }
 
+  // Track active repeating/looping alarms per timerId
+  private activeAlarms: Map<string, { intervalId: ReturnType<typeof setInterval>; repeatsLeft: number }> = new Map();
+
   public playAlert(preset: SoundPreset = 'chime') {
     const ctx = this.getAudioContext();
     if (!ctx) return;
@@ -134,6 +137,55 @@ class SoundEngine {
         });
         break;
       }
+    }
+  }
+
+  /**
+   * Start an alarm for a timer with optional repeating/looping
+   * repeatCount: 1 (play once), 3 (repeat 3x), 5 (repeat 5x), 0 (continuous loop until dismissed)
+   */
+  public startAlarm(timerId: string, preset: SoundPreset = 'chime', repeatCount: number = 3) {
+    this.stopAlarm(timerId);
+
+    // Play first iteration immediately
+    this.playAlert(preset);
+
+    if (repeatCount === 1) {
+      return;
+    }
+
+    let repeatsRemaining = repeatCount === 0 ? Infinity : repeatCount - 1;
+
+    const intervalId = setInterval(() => {
+      if (repeatsRemaining <= 0) {
+        this.stopAlarm(timerId);
+        return;
+      }
+      this.playAlert(preset);
+      if (repeatsRemaining !== Infinity) {
+        repeatsRemaining -= 1;
+      }
+    }, 1800);
+
+    this.activeAlarms.set(timerId, {
+      intervalId,
+      repeatsLeft: repeatsRemaining,
+    });
+  }
+
+  /**
+   * Stops repeating/continuous alarm for a specific timer (or all active alarms if timerId is omitted)
+   */
+  public stopAlarm(timerId?: string) {
+    if (timerId) {
+      const active = this.activeAlarms.get(timerId);
+      if (active) {
+        clearInterval(active.intervalId);
+        this.activeAlarms.delete(timerId);
+      }
+    } else {
+      this.activeAlarms.forEach((alarm) => clearInterval(alarm.intervalId));
+      this.activeAlarms.clear();
     }
   }
 

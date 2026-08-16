@@ -106,12 +106,21 @@ export const FocusModal: React.FC<FocusModalProps> = ({
         {/* Big Giant Display Center */}
         <div className="my-auto flex flex-col items-center justify-center w-full">
           {!isStopwatch && timer?.isCompleted ? (
-            <div className="flex flex-col items-center space-y-4 animate-bounce text-center">
-              <div className="w-24 h-24 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-2xl">
+            <div className="flex flex-col items-center space-y-4 text-center">
+              <div className="w-24 h-24 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-2xl animate-bounce">
                 <BellRing className="w-12 h-12" />
               </div>
               <h2 className="text-4xl sm:text-6xl font-black text-rose-400">Time's Up!</h2>
               <p className="text-lg text-slate-300">Timer "{timer.name}" has finished.</p>
+              <div className="pt-2">
+                <button
+                  onClick={() => onReset(timer.id)}
+                  className="py-3 px-8 rounded-2xl bg-white text-slate-900 font-bold text-base shadow-xl flex items-center gap-2 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                  <span>Dismiss Alarm</span>
+                </button>
+              </div>
             </div>
           ) : (
             <div className="relative flex flex-col items-center justify-center">

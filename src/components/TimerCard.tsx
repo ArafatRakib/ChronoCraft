@@ -30,17 +30,18 @@ interface TimerCardProps {
   onUpdateName: (id: string, name: string) => void;
   onUpdateColor: (id: string, color: ColorName) => void;
   onUpdateSound: (id: string, sound: SoundPreset) => void;
+  onUpdateRepeat?: (id: string, repeat: number) => void;
   onDelete: (id: string) => void;
   onOpenFocus: (id: string) => void;
   isCompact?: boolean;
 }
 
 const SOUND_LABELS: Record<SoundPreset, string> = {
-  chime: 'High Chime',
-  digital: 'Digital Beep',
-  bell: 'Bell Chime',
-  marimba: 'Marimba Motif',
-  gentle: 'Gentle Chord',
+  chime: 'Chime',
+  digital: 'Digital',
+  bell: 'Bell',
+  marimba: 'Marimba',
+  gentle: 'Gentle',
 };
 
 export const TimerCard: React.FC<TimerCardProps> = ({
@@ -53,6 +54,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
   onUpdateName,
   onUpdateColor,
   onUpdateSound,
+  onUpdateRepeat,
   onDelete,
   onOpenFocus,
 }) => {
@@ -200,7 +202,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
 
           {/* More Options Dropdown */}
           {showMenu && (
-            <div className="absolute right-0 top-full mt-1.5 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-40 sm:w-44 animate-in fade-in zoom-in-95 space-y-0.5 text-xs font-medium no-focus-trigger">
+            <div className="absolute right-0 top-full mt-1.5 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-48 sm:w-52 animate-in fade-in zoom-in-95 space-y-0.5 text-xs font-medium no-focus-trigger">
               <button
                 onClick={() => {
                   setShowMenu(false);
@@ -230,11 +232,11 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 }}
                 className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center justify-between cursor-pointer"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <Volume2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span className="whitespace-nowrap">Alarm Sound</span>
                 </div>
-                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold truncate max-w-[50px]">
+                <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 shrink-0">
                   {SOUND_LABELS[timer.soundAlert]}
                 </span>
               </button>
@@ -267,22 +269,24 @@ export const TimerCard: React.FC<TimerCardProps> = ({
 
           {/* Sound Preset Picker Submenu */}
           {showSoundPicker && (
-            <div className="absolute right-0 top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-44 sm:w-48 animate-in fade-in zoom-in-95 no-focus-trigger">
+            <div className="absolute right-0 top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-56 sm:w-60 animate-in fade-in zoom-in-95 no-focus-trigger">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Alarm Sound Tone</span>
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                  <Volume2 className="w-3.5 h-3.5 text-indigo-500" />
+                  Alarm Tone
+                </span>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 mb-3">
                 {(['chime', 'digital', 'bell', 'marimba', 'gentle'] as SoundPreset[]).map((snd) => (
                   <button
                     key={snd}
                     onClick={() => {
                       onUpdateSound(timer.id, snd);
                       testSound(snd);
-                      setShowSoundPicker(false);
                     }}
                     className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${
                       timer.soundAlert === snd
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold'
+                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold'
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50'
                     }`}
                   >
@@ -290,6 +294,40 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                     {timer.soundAlert === snd && <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />}
                   </button>
                 ))}
+              </div>
+
+              <div className="border-t border-slate-100 dark:border-slate-700/60 pt-2.5">
+                <div className="text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1.5">
+                  Repeat Alert
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { label: 'Once (1x)', val: 1 },
+                    { label: 'Repeat 3x', val: 3 },
+                    { label: 'Repeat 5x', val: 5 },
+                    { label: 'Loop (Until Stop)', val: 0 },
+                  ].map((rep) => {
+                    const currentRepeat = timer.soundRepeat !== undefined ? timer.soundRepeat : 3;
+                    const isSelected = currentRepeat === rep.val;
+                    return (
+                      <button
+                        key={rep.val}
+                        onClick={() => {
+                          if (onUpdateRepeat) {
+                            onUpdateRepeat(timer.id, rep.val);
+                          }
+                        }}
+                        className={`px-2 py-1.5 rounded-lg text-[11px] font-medium text-center transition-colors cursor-pointer border ${
+                          isSelected
+                            ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 font-bold'
+                            : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                        }`}
+                      >
+                        {rep.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
