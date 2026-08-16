@@ -27,7 +27,7 @@ jobs:
       - name: Install Node Dependencies
         run: npm install
 
-      - name: Build Web Dist
+      - name: Build Web App
         run: npm run build
 
       - name: Setup Java JDK
@@ -42,6 +42,13 @@ jobs:
       - name: Sync Capacitor Android
         run: npx @capacitor/cli sync android
 
+      - name: Strip Termux AAPT2 Overrides for GitHub Linux Runner
+        working-directory: android
+        run: |
+          sed -i '/aapt2/d' gradle.properties || true
+          echo "=== gradle.properties after cleanup ==="
+          cat gradle.properties
+
       - name: Make Gradle Executable
         run: chmod +x android/gradlew
 
@@ -52,10 +59,7 @@ jobs:
         run: |
           echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
 
-      - name: Build Release APK & AAB (Signed)
-        if: env.HAS_KEYSTORE == 'true'
-        env:
-          HAS_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
+      - name: Build Release APK & AAB
         working-directory: android
         run: |
           ./gradlew assembleRelease bundleRelease \
@@ -64,21 +68,13 @@ jobs:
             -Pandroid.injected.signing.key.alias="${{ secrets.RELEASE_KEY_ALIAS }}" \
             -Pandroid.injected.signing.key.password="${{ secrets.RELEASE_KEY_PASSWORD }}"
 
-      - name: Build Release APK (Unsigned Fallback)
-        if: env.HAS_KEYSTORE != 'true'
-        env:
-          HAS_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE_BASE64 != '' }}
-        working-directory: android
-        run: |
-          ./gradlew assembleRelease
-
-      - name: Collect Release Files
+      - name: Collect Release Binaries
         run: |
           mkdir -p release-output
           find android/app/build/outputs -type f \( -name "*.apk" -o -name "*.aab" \) -exec cp {} release-output/ \;
           ls -la release-output/
 
-      - name: Publish GitHub Release
+      - name: Upload Binaries to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
