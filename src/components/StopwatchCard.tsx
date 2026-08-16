@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StopwatchItem, ColorName } from '../types';
 import { COLOR_THEMES } from '../constants/colors';
 import { formatTime } from '../utils/timeFormatter';
@@ -16,7 +16,8 @@ import {
   ChevronDown, 
   ChevronUp, 
   Copy,
-  Clock
+  Clock,
+  MoreVertical
 } from 'lucide-react';
 
 interface StopwatchCardProps {
@@ -48,9 +49,49 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(stopwatch.name);
+  const [showMenu, setShowMenu] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showLaps, setShowLaps] = useState(true);
   const [copied, setCopied] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const lastTapRef = useRef<number>(0);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+        setShowColorPicker(false);
+      }
+    };
+    if (showMenu || showColorPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu, showColorPicker]);
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button, input, a, [role="button"], .no-focus-trigger')) {
+      return;
+    }
+    const now = Date.now();
+    if (now - lastTapRef.current < 320) {
+      onOpenFocus(stopwatch.id);
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+    }
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button, input, a, [role="button"], .no-focus-trigger')) {
+      return;
+    }
+    onOpenFocus(stopwatch.id);
+  };
 
   const theme = COLOR_THEMES[stopwatch.color] || COLOR_THEMES.blue;
   const time = formatTime(elapsedMs);
@@ -101,7 +142,9 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
 
   return (
     <div 
-      className={`relative rounded-xl sm:rounded-2xl transition-all duration-300 border-t-4 border-x border-b ${theme.border} bg-white dark:bg-slate-900/90 shadow-sm hover:shadow-md overflow-hidden flex flex-col justify-between ${
+      onDoubleClick={handleDoubleClick}
+      onTouchEnd={handleTouchEnd}
+      className={`relative rounded-xl sm:rounded-2xl transition-all duration-300 border-t-4 border-x border-b ${theme.border} bg-white dark:bg-slate-900/90 shadow-sm hover:shadow-md overflow-visible flex flex-col justify-between select-none ${
         stopwatch.isRunning ? `ring-2 ring-offset-2 dark:ring-offset-slate-950 ${theme.glow}` : ''
       }`}
       style={{
@@ -110,15 +153,22 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
       }}
     >
       {/* Top Header Bar */}
-      <div className={`px-2.5 py-2 sm:px-4 sm:py-3 border-b ${theme.border} flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/40 gap-1`}>
-        <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
-          <span 
-            className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0" 
-            style={{ backgroundColor: theme.accentHex }} 
+      <div className={`px-3 py-2 sm:px-4 sm:py-2.5 border-b ${theme.border} rounded-t-lg sm:rounded-t-xl flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/40 gap-2`}>
+        {/* Left: Color dot + Title */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={() => {
+              setShowColorPicker(!showColorPicker);
+              setShowMenu(false);
+            }}
+            className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full ring-2 ring-white dark:ring-slate-800 shadow-sm transition-transform active:scale-90 hover:scale-110 cursor-pointer shrink-0"
+            style={{ backgroundColor: theme.accentHex }}
+            title="Change Color Theme"
           />
 
           {isEditingName ? (
-            <div className="flex items-center gap-1 flex-1 max-w-[140px] sm:max-w-[200px]">
+            <div className="flex items-center gap-1 flex-1 min-w-0">
               <input
                 type="text"
                 value={nameInput}
@@ -126,75 +176,103 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
                 onBlur={handleSaveName}
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
                 autoFocus
-                className="w-full text-xs sm:text-sm font-semibold px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                className="w-full text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-slate-400"
               />
               <button 
                 onClick={handleSaveName}
-                className="p-0.5 sm:p-1 text-emerald-600 hover:text-emerald-700 rounded"
+                className="p-0.5 text-emerald-600 hover:text-emerald-700 rounded shrink-0"
               >
                 <Check className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-1 min-w-0 flex-1 group">
-              <h3 
-                onClick={() => setIsEditingName(true)}
-                className="font-semibold text-slate-800 dark:text-slate-100 truncate text-xs sm:text-sm md:text-base cursor-pointer hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                title="Click to rename"
-              >
-                {stopwatch.name}
-              </h3>
-              <button
-                onClick={() => setIsEditingName(true)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hidden sm:inline-block"
-                title="Rename"
-              >
-                <Edit3 className="w-3 h-3" />
-              </button>
-            </div>
+            <h3 
+              onClick={() => setIsEditingName(true)}
+              className="font-bold text-slate-800 dark:text-slate-100 truncate text-xs sm:text-sm md:text-base cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex-1 min-w-0"
+              title={`${stopwatch.name} (Click to rename • Double-click for Focus Mode)`}
+            >
+              {stopwatch.name}
+            </h3>
           )}
         </div>
 
-        {/* Right Header Actions */}
-        <div className="flex items-center gap-0.5 shrink-0">
-          <div className="relative">
-            <button
-              onClick={() => setShowColorPicker(!showColorPicker)}
-              className="p-1 sm:p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors"
-              title="Change Theme Color"
-            >
-              <Palette className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
-            {showColorPicker && (
-              <div className="absolute right-0 top-full mt-2 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 w-48">
-                <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Color Theme</div>
-                <ColorPicker
-                  selectedColor={stopwatch.color}
-                  onChange={(color) => {
-                    onUpdateColor(stopwatch.id, color);
-                    setShowColorPicker(false);
-                  }}
-                  size="sm"
-                />
-              </div>
-            )}
-          </div>
-
+        {/* Right: Consolidated 3-dots Menu Button */}
+        <div className="relative shrink-0" ref={menuRef}>
           <button
-            onClick={() => onOpenFocus(stopwatch.id)}
-            className="p-1 sm:p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors"
-            title="Focus Mode (Fullscreen)"
+            type="button"
+            onClick={() => {
+              setShowMenu(!showMenu);
+              setShowColorPicker(false);
+            }}
+            className="p-1 sm:p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            title="Options"
           >
-            <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <MoreVertical className="w-4 h-4" />
           </button>
 
-          <button
-            onClick={() => onDelete(stopwatch.id)}
-            className="p-1 sm:p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-            title="Delete Stopwatch"
-          >
-            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          </button>
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-1.5 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-40 sm:w-44 animate-in fade-in zoom-in-95 space-y-0.5 text-xs font-medium no-focus-trigger">
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  onOpenFocus(stopwatch.id);
+                }}
+                className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <Maximize2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>Focus Mode</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  setIsEditingName(true);
+                }}
+                className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>Rename</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  setShowColorPicker(true);
+                }}
+                className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <Palette className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>Color Theme</span>
+              </button>
+
+              <div className="my-1 border-t border-slate-100 dark:border-slate-700/60" />
+
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  onDelete(stopwatch.id);
+                }}
+                className="w-full px-2.5 py-1.5 text-left rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                <span>Delete Stopwatch</span>
+              </button>
+            </div>
+          )}
+
+          {showColorPicker && (
+            <div className="absolute right-0 top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-48 animate-in fade-in zoom-in-95 no-focus-trigger">
+              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Color Theme</div>
+              <ColorPicker
+                selectedColor={stopwatch.color}
+                onChange={(color) => {
+                  onUpdateColor(stopwatch.id, color);
+                  setShowColorPicker(false);
+                }}
+                size="sm"
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -225,54 +303,53 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
         </div>
       </div>
 
-      {/* Control Buttons */}
-      <div className="px-2.5 pb-3 sm:px-4 sm:pb-4 pt-1">
-        <div className="grid grid-cols-3 gap-1 sm:gap-2">
-          {/* Lap Button */}
+      {/* Control Buttons (2-Row Layout: Big Start + Lap/Reset) */}
+      <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-1 space-y-1.5">
+        {/* Row 1: Primary Start / Pause Button */}
+        <button
+          onClick={() => (stopwatch.isRunning ? onPause(stopwatch.id) : onStart(stopwatch.id))}
+          className="w-full py-2 sm:py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 text-white shadow-sm transition-all active:scale-[0.98] hover:opacity-95 cursor-pointer"
+          style={{ backgroundColor: theme.accentHex }}
+        >
+          {stopwatch.isRunning ? (
+            <>
+              <Pause className="w-4 h-4 fill-white shrink-0" />
+              <span>Pause</span>
+            </>
+          ) : (
+            <>
+              <Play className="w-4 h-4 fill-white ml-0.5 shrink-0" />
+              <span>Start</span>
+            </>
+          )}
+        </button>
+
+        {/* Row 2: Secondary Lap & Reset Buttons */}
+        <div className="grid grid-cols-2 gap-1.5">
           <button
             onClick={() => onAddLap(stopwatch.id)}
             disabled={!stopwatch.isRunning}
-            className={`py-1.5 sm:py-2 px-1 sm:px-2.5 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-1 transition-all active:scale-95 ${
+            className={`py-1.5 px-2 rounded-lg font-medium text-xs flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer ${
               stopwatch.isRunning
                 ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
                 : 'bg-slate-50 dark:bg-slate-800/40 text-slate-300 dark:text-slate-600 border border-slate-100 dark:border-slate-800/50 cursor-not-allowed'
             }`}
           >
-            <Flag className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            <span className="hidden sm:inline">Lap</span>
+            <Flag className="w-3.5 h-3.5 shrink-0" />
+            <span>Lap</span>
           </button>
 
-          {/* Play / Pause Primary Button */}
-          <button
-            onClick={() => (stopwatch.isRunning ? onPause(stopwatch.id) : onStart(stopwatch.id))}
-            className="py-1.5 sm:py-2 px-1 sm:px-2.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm flex items-center justify-center gap-1 text-white shadow-sm transition-all active:scale-95 hover:opacity-95"
-            style={{ backgroundColor: theme.accentHex }}
-          >
-            {stopwatch.isRunning ? (
-              <>
-                <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-white shrink-0" />
-                <span className="truncate">Pause</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-white ml-0.5 shrink-0" />
-                <span className="truncate">Start</span>
-              </>
-            )}
-          </button>
-
-          {/* Reset Button */}
           <button
             onClick={() => onReset(stopwatch.id)}
             disabled={elapsedMs === 0}
-            className={`py-1.5 sm:py-2 px-1 sm:px-2.5 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-1 transition-all active:scale-95 ${
+            className={`py-1.5 px-2 rounded-lg font-medium text-xs flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer ${
               elapsedMs > 0
                 ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
                 : 'bg-slate-50 dark:bg-slate-800/40 text-slate-300 dark:text-slate-600 border border-slate-100 dark:border-slate-800/50 cursor-not-allowed'
             }`}
           >
-            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            <span className="hidden sm:inline">Reset</span>
+            <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+            <span>Reset</span>
           </button>
         </div>
       </div>
