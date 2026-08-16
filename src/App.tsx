@@ -607,7 +607,7 @@ export default function App() {
       </div>
 
       {/* Main Container Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-6 flex-1">
+      <main className="max-w-7xl mx-auto px-2.5 sm:px-4 md:px-6 lg:px-8 w-full py-4 sm:py-6 flex-1">
         {isTotalEmpty ? (
           <EmptyState
             activeTab={activeTab}
@@ -618,14 +618,14 @@ export default function App() {
             onOpenPresets={() => setIsPresetsOpen(true)}
           />
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-6 sm:space-y-10">
             {/* STOPWATCHES SECTION */}
             {showStopwatches && filteredStopwatches.length > 0 && (
-              <section className="space-y-4">
+              <section className="space-y-3 sm:space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                    <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
+                    <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">
                       Stopwatches ({filteredStopwatches.length})
                     </h2>
                   </div>
@@ -640,10 +640,10 @@ export default function App() {
                 </div>
 
                 <div
-                  className={`grid gap-6 ${
+                  className={`grid gap-2.5 sm:gap-4 lg:gap-6 ${
                     viewLayout === 'compact'
-                      ? 'grid-cols-1 md:grid-cols-2'
-                      : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                      ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+                      : 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4'
                   }`}
                 >
                   {filteredStopwatches.map((sw) => (
@@ -668,11 +668,11 @@ export default function App() {
 
             {/* TIMERS SECTION */}
             {showTimers && filteredTimers.length > 0 && (
-              <section className="space-y-4">
+              <section className="space-y-3 sm:space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
-                  <div className="flex items-center gap-2">
-                    <TimerIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                    <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <TimerIcon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
+                    <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">
                       Timers ({filteredTimers.length})
                     </h2>
                   </div>
@@ -687,10 +687,10 @@ export default function App() {
                 </div>
 
                 <div
-                  className={`grid gap-6 ${
+                  className={`grid gap-2.5 sm:gap-4 lg:gap-6 ${
                     viewLayout === 'compact'
-                      ? 'grid-cols-1 md:grid-cols-2'
-                      : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                      ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+                      : 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4'
                   }`}
                 >
                   {filteredTimers.map((t) => (
