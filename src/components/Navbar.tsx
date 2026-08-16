@@ -223,41 +223,41 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile View Tab Switcher Sub-bar */}
-        <div className="grid grid-cols-3 md:hidden py-1.5 border-t border-slate-200/60 dark:border-slate-800 text-xs font-semibold gap-1">
+        <div className="flex items-center md:hidden py-1.5 border-t border-slate-200/60 dark:border-slate-800 text-xs font-semibold gap-1.5">
           <button
             onClick={() => onSelectTab('all')}
-            className={`py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 truncate ${
+            className={`py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1 shrink-0 whitespace-nowrap transition-colors ${
               activeTab === 'all'
                 ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
-                : 'text-slate-500 dark:text-slate-400'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Layers className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">All ({totalCount})</span>
+            <span>All ({totalCount})</span>
           </button>
 
           <button
             onClick={() => onSelectTab('stopwatches')}
-            className={`py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 truncate ${
+            className={`py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1 flex-1 whitespace-nowrap transition-colors ${
               activeTab === 'stopwatches'
                 ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
-                : 'text-slate-500 dark:text-slate-400'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Clock className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">Stopwatches ({stopwatchCount})</span>
+            <span>Stopwatches ({stopwatchCount})</span>
           </button>
 
           <button
             onClick={() => onSelectTab('timers')}
-            className={`py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 truncate ${
+            className={`py-1.5 px-2.5 rounded-xl flex items-center justify-center gap-1 shrink-0 whitespace-nowrap transition-colors ${
               activeTab === 'timers'
                 ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
-                : 'text-slate-500 dark:text-slate-400'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <TimerIcon className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">Timers ({timerCount})</span>
+            <span>Timers ({timerCount})</span>
           </button>
         </div>
       </div>
