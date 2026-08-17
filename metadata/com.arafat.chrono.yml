@@ -1,0 +1,40 @@
+Categories:
+  - Time
+  - Utilities
+License: MIT
+AuthorName: Arafat Hossain
+SourceCode: https://github.com/arafathossain/chrono
+IssueTracker: https://github.com/arafathossain/chrono/issues
+
+AutoName: Chrono
+Summary: Privacy-first multi-timer and multi-stopwatch with focus mode
+Description: |-
+  Chrono is an elegant, privacy-first multi-timer and multi-stopwatch application designed for productivity, workouts, cooking, studying, and time management.
+
+  Features:
+  * Concurrent timers & stopwatches running simultaneously
+  * Detailed lap history with split times, fastest/slowest highlights, and clipboard copy
+  * Immersive focus mode with keyboard navigation
+  * Custom hex color themes and tags
+  * 100% offline & local data storage — zero trackers, telemetry, or third-party ads
+  * Synthesized Web Audio alarm sounds (no proprietary blobs)
+
+RepoType: git
+Repo: https://github.com/arafathossain/chrono.git
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: v1.0.0
+    subdir: android
+    gradle:
+      - yes
+    prebuild:
+      - npm install
+      - npm run build
+      - npx cap sync android
+
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1

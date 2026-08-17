@@ -1,0 +1,13 @@
+<b>Chrono</b> is an elegant, privacy-first multi-timer and multi-stopwatch application designed for productivity, workouts, cooking, studying, and time management.
+
+<h3>Key Features:</h3>
+• <b>Concurrent Multi-Timers & Stopwatches:</b> Run as many independent timers and stopwatches simultaneously as you need.
+• <b>Comprehensive Lap Timing:</b> Track split and total times with clear fastest & slowest lap highlights.
+• <b>Immersive Focus Mode:</b> Distraction-free full-screen display with quick-access controls and keyboard shortcuts.
+• <b>Custom Color Themes:</b> Color-code tasks using curated palettes or any custom hex color code.
+• <b>Zero Analytics & Telemetry:</b> 100% offline and privacy-first. All data is kept locally on your device.
+• <b>Synthesized Audio Alarms:</b> Pure Web Audio API tone synthesis with no proprietary binary blobs or external audio streaming.
+• <b>Organized Views & Filter:</b> Filter by status (running, paused, completed) or color tags, with quick bulk actions.
+
+<h3>FOSS & Privacy Commitment:</h3>
+Chrono is Free and Open Source Software (FOSS) released under the MIT License. It does not require an account, has no advertisements, and contains zero trackers.
