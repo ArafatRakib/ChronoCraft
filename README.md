@@ -10,25 +10,22 @@
 
 <p align="center">
   <a href="https://github.com/ArafatRakib/ChronoCraft/releases/latest"><img src="https://img.shields.io/github/v/release/ArafatRakib/ChronoCraft?style=for-the-badge&color=6366f1&logo=android&logoColor=white" alt="Latest Release" /></a>
-  <a href="https://github.com/ArafatRakib/ChronoCraft/releases/latest/download/app-release.apk"><img src="https://img.shields.io/badge/Download-APK-22c55e?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" /></a>
+  <a href="https://github.com/ArafatRakib/ChronoCraft/releases/latest/download/ChronoCraft-latest.apk"><img src="https://img.shields.io/badge/Download-APK-22c55e?style=for-the-badge&logo=android&logoColor=white" alt="Download Latest APK" /></a>
   <a href="https://github.com/ArafatRakib/ChronoCraft/actions/workflows/build-release.yml"><img src="https://img.shields.io/github/actions/workflow/status/ArafatRakib/ChronoCraft/build-release.yml?style=for-the-badge&label=Build%20Status" alt="Build Status" /></a>
   <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License" />
 </p>
 
 ---
 
-## ⚡ Direct Download
+## ⚡ Download
 
 Want to track your boiling eggs, 25-minute Pomodoro, and gym rest intervals simultaneously without having 4 phones on your desk?
 
 <p align="center">
-  <a href="https://github.com/ArafatRakib/ChronoCraft/releases/latest/download/app-release.apk">
-    <img src="https://img.shields.io/badge/⚡_Direct_Download_Latest_APK-app--release.apk-6366f1?style=for-the-badge&logo=google-play&logoColor=white" alt="Direct APK Download" height="48" />
+  <!-- Direct download button -->
+  <a href="https://github.com/ArafatRakib/ChronoCraft/releases/latest/download/ChronoCraft-latest.apk">
+  <img src="https://img.shields.io/badge/⚡_Direct_Download_Latest_APK-ChronoCraft--latest.apk-6366f1?style=for-the-badge&logo=google-play&logoColor=white" alt="Direct APK Download" height="48" />
   </a>
-</p>
-
-> 💡 *Always points directly to the latest release `.apk` on GitHub Releases.*
-
 ---
 
 ## 🧐 Why ChronoCraft?
@@ -48,7 +45,7 @@ ChronoCraft lets you create, run, color-code, and organize **unlimited concurren
 
 ## 🐣 The Story Behind the App
 
-ChronoCraft was born in a hospital delivery room. 
+ChronoCraft was born along with my baby. 
 
 When my wife went into labor, I needed to track two distinct metrics simultaneously: **the duration of each contraction** and **the precise interval between them**. Every free app I tried was either locked behind a paywall, cluttered with ads, or incapable of tracking overlapping timers clearly. 
 
@@ -72,7 +69,7 @@ Out of frustration and necessity, I built ChronoCraft on the spot to manage mult
 ## 📲 Installation
 
 ### Option 1: Download the Pre-built APK (Recommended)
-1. Download [**`app-release.apk`**](https://github.com/ArafatRakib/ChronoCraft/releases/latest/download/app-release.apk).
+1. Download [**`ChronoCraft-latest.apk`**](href="https://github.com/ArafatRakib/ChronoCraft/releases/latest/download/ChronoCraft-latest.apk).
 2. Tap the downloaded file on your Android device.
 3. If prompted, toggle *“Allow from this source”* in Settings.
 4. Open **ChronoCraft** and master time itself.

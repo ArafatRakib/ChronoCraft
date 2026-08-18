@@ -69,7 +69,27 @@ jobs:
       - name: Collect Release Binaries
         run: |
           mkdir -p release-output
-          find android/app/build/outputs -type f \( -name "*.apk" -o -name "*.aab" \) -exec cp {} release-output/ \;
+          
+          # Extract tag version (e.g., v1.0.19) or fallback to 'manual' for workflow_dispatch
+          VERSION="${{ github.ref_name }}"
+          if [ -z "$VERSION" ] || [ "$VERSION" = "main" ]; then VERSION="latest"; fi
+
+          # Locate and copy the built release APK/AAB
+          APK_FILE=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          AAB_FILE=$(find android/app/build/outputs/bundle/release -name "*.aab" | head -n 1)
+
+          if [ -f "$APK_FILE" ]; then
+            # Copy versioned APK (e.g., ChronoCraft-v1.0.19.apk)
+            cp "$APK_FILE" "release-output/ChronoCraft-${VERSION}.apk"
+            # Copy static alias APK for static direct download links
+            cp "$APK_FILE" "release-output/ChronoCraft-latest.apk"
+          fi
+
+          if [ -f "$AAB_FILE" ]; then
+            # Copy versioned AAB
+            cp "$AAB_FILE" "release-output/ChronoCraft-${VERSION}.aab"
+          fi
+
           ls -la release-output/
 
       - name: Upload Binaries to GitHub Release
