@@ -69,7 +69,7 @@ Out of frustration and necessity, I built ChronoCraft on the spot to manage mult
 ## 📲 Installation
 
 ### Option 1: Download the Pre-built APK (Recommended)
-1. Download [**`ChronoCraft-latest.apk`**](href="https://github.com/ArafatRakib/ChronoCraft/releases/latest/download/ChronoCraft-latest.apk).
+1. Download [**`ChronoCraft-latest.apk`**](href="https://github.com/ArafatRakib/ChronoCraft/releases/latest/download/ChronoCraft-latest.apk")
 2. Tap the downloaded file on your Android device.
 3. If prompted, toggle *“Allow from this source”* in Settings.
 4. Open **ChronoCraft** and master time itself.

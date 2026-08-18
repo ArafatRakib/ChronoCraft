@@ -2,9 +2,9 @@ Categories:
   - Time
   - Utilities
 License: MIT
-AuthorName: Arafat Hossain
-SourceCode: https://github.com/arafathossain/chronocraft
-IssueTracker: https://github.com/arafathossain/chronocraft/issues
+AuthorName: Arafat Hossain Rakib
+SourceCode: https://github.com/ArafatRakib/chronocraft
+IssueTracker: https://github.com/ArafatRakib/chronocraft/issues
 
 AutoName: 'ChronoCraft: Multi-Timer & Stopwatch'
 Summary: Privacy-first multi-timer and multi-stopwatch with focus mode
@@ -20,7 +20,7 @@ Description: |-
   * Synthesized Web Audio alarm sounds (no proprietary blobs)
 
 RepoType: git
-Repo: https://github.com/arafathossain/chronocraft.git
+Repo: https://github.com/ArafatRakib/chronocraft.git
 
 Builds:
   - versionName: 1.0.0
