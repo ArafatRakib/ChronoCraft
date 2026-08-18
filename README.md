@@ -13,6 +13,11 @@
   <a href="https://github.com/ArafatRakib/ChronoCraft/releases/latest/download/ChronoCraft-latest.apk"><img src="https://img.shields.io/badge/Download-APK-22c55e?style=for-the-badge&logo=android&logoColor=white" alt="Download Latest APK" /></a>
   <a href="https://github.com/ArafatRakib/ChronoCraft/actions/workflows/build-release.yml"><img src="https://img.shields.io/github/actions/workflow/status/ArafatRakib/ChronoCraft/build-release.yml?style=for-the-badge&label=Build%20Status" alt="Build Status" /></a>
   <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License" />
+    <a href="https://github.com/ArafatRakib/ChronoCraft"><img src="https://img.shields.io/badge/Obtainium-Add%20App-238636?style=for-the-badge&logo=github&logoColor=white" alt="Add to Obtainium" /></a>
+  <a href="https://accrescent.app"><img src="https://img.shields.io/badge/ChronoCraft-Orion%20Store-0052CC?style=for-the-badge&logo=android&logoColor=white" alt="ChronoCraft / Orion Store" /></a>
+  <a href="https://arafatrakib.github.io/ChronoCraft/">
+  <img src="https://img.shields.io/badge/🌐_Try_Web_App-Live_Demo-6366f1?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Live Web Demo" />
+</a>
 </p>
 
 ---
@@ -100,7 +105,10 @@ Out of frustration and necessity, I built ChronoCraft on the spot to manage mult
 3. If prompted, toggle *“Allow from this source”* in Settings.
 4. Open **ChronoCraft** and master time itself.
 
-### Option 2: Build From Source (Termux / Linux / macOS)
+### Option 2: Install from Orion store
+[![Get it on Orion Store](https://raw.githubusercontent.com/RookieEnough/Orion-Store/refs/heads/main/assets/orion-badge.png)](https://rookieenough.github.io/Orion-Data/redirect.html?id=chronocraft)
+
+### Option 3: Build From Source (Termux / Linux / macOS)
 
 ```bash
 # 1. Clone the repository
