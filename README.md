@@ -65,6 +65,32 @@ Out of frustration and necessity, I built ChronoCraft on the spot to manage mult
 - 🌙 **OLED Dark & Crisp Light Modes** — Easy on your battery and easier on your eyes at 2 AM.
 
 ---
+## 🖥️ Screenshots 
+<!--
+<details>
+  <summary>📸 Click to view App Screenshots</summary>
+  <br />
+  <p align="center">
+    <img src="assets/screenshots/main_page.jpg" width="240" />
+    <img src="assets/screenshots/timer_focus_mode.jpg" width="240" />
+    <img src="assets/screenshots/stopwatch_focus_mode.jpg" width="240" />
+    <img src="assets/screenshots/stopwatch_focus_with_laps.jpg" width="240" />
+    <img src="assets/screenshots/filters.jpg" width="240" />
+    <img src="assets/screenshots/lap_history_in_focus.jpg" width="240" />
+  </p>
+</details>
+-->
+
+<p align="center">
+  <img src="assets/screenshots/main_page.jpg" width="240" />
+  <img src="assets/screenshots/timer_focus_mode.jpg" width="240" />
+  <img src="assets/screenshots/stopwatch_focus_mode.jpg" width="240" />
+  <img src="assets/screenshots/stopwatch_focus_with_laps.jpg" width="240" />
+  <img src="assets/screenshots/filters.jpg" width="240" />
+  <img src="assets/screenshots/lap_history_in_focus.jpg" width="240" />
+</p>
+
+---
 
 ## 📲 Installation
 
