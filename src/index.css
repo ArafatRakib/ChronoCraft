@@ -5,7 +5,6 @@
 :root {
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
-  --status-bar-height: 38px;
 }
 
 @layer base {
@@ -58,4 +57,3 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.45);
 }
-

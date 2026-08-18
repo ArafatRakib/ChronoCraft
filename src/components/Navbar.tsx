@@ -55,7 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header 
       className="sticky top-0 z-40 w-full bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors"
       style={{
-        paddingTop: 'max(env(safe-area-inset-top, 0px), var(--status-bar-height, 0px))',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">

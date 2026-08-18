@@ -658,11 +658,11 @@ export default function App() {
                 </div>
 
                 <div
-                  className={`grid gap-2.5 sm:gap-4 lg:gap-6 ${
+                  className={
                     viewLayout === 'compact'
-                      ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-                      : 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4'
-                  }`}
+                      ? 'flex flex-col gap-2'
+                      : 'grid gap-2.5 sm:gap-4 lg:gap-6 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4'
+                  }
                 >
                   {filteredStopwatches.map((sw) => (
                     <StopwatchCard
@@ -705,11 +705,11 @@ export default function App() {
                 </div>
 
                 <div
-                  className={`grid gap-2.5 sm:gap-4 lg:gap-6 ${
+                  className={
                     viewLayout === 'compact'
-                      ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
-                      : 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4'
-                  }`}
+                      ? 'flex flex-col gap-2'
+                      : 'grid gap-2.5 sm:gap-4 lg:gap-6 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4'
+                  }
                 >
                   {filteredTimers.map((t) => (
                     <TimerCard

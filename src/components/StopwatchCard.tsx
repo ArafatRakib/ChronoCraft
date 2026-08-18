@@ -81,34 +81,39 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
         setShowColorPicker(false);
       }
     };
-    if (showMenu || showColorPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showMenu, showColorPicker]);
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('button, input, a, [role="button"], .no-focus-trigger')) {
-      return;
-    }
-    const now = Date.now();
-    if (now - lastTapRef.current < 320) {
-      onOpenFocus(stopwatch.id);
-      lastTapRef.current = 0;
-    } else {
-      lastTapRef.current = now;
-    }
-  };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleDoubleClick = (e: React.MouseEvent) => {
+    // Only open focus mode if double clicking the card body, not buttons or inputs
     const target = e.target as HTMLElement;
-    if (target.closest('button, input, a, [role="button"], .no-focus-trigger')) {
+    if (
+      target.closest('button') || 
+      target.closest('input') || 
+      target.closest('.no-focus-trigger')
+    ) {
       return;
     }
     onOpenFocus(stopwatch.id);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('button') || 
+      target.closest('input') || 
+      target.closest('.no-focus-trigger')
+    ) {
+      return;
+    }
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTapRef.current;
+    if (tapLength < 300 && tapLength > 0) {
+      onOpenFocus(stopwatch.id);
+      e.preventDefault();
+    }
+    lastTapRef.current = currentTime;
   };
 
   const theme = getColorTheme(stopwatch.color);
@@ -158,6 +163,194 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // ==========================================
+  // COMPACT / LIST ROW VIEW
+  // ==========================================
+  if (isCompact) {
+    return (
+      <div 
+        onDoubleClick={handleDoubleClick}
+        onTouchEnd={handleTouchEnd}
+        className={`relative rounded-xl transition-all border-l-4 border-y border-r ${theme.border} bg-white dark:bg-slate-900/90 shadow-sm hover:shadow-md p-3 flex items-center justify-between gap-3 select-none ${
+          stopwatch.isRunning ? `ring-2 ring-offset-1 dark:ring-offset-slate-950 ${theme.glow}` : ''
+        }`}
+        style={{
+          borderLeftColor: theme.accentHex,
+        }}
+      >
+        {/* Left: Info & Name */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={() => {
+              setShowColorPicker(!showColorPicker);
+              setShowMenu(false);
+            }}
+            className="w-3.5 h-3.5 rounded-full ring-2 ring-white dark:ring-slate-800 shadow-sm transition-transform active:scale-90 hover:scale-110 cursor-pointer shrink-0"
+            style={{ backgroundColor: theme.accentHex }}
+            title="Change Color"
+          />
+
+          <div className="min-w-0 flex-1">
+            {isEditingName ? (
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  onBlur={handleSaveName}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                  autoFocus
+                  className="w-full text-xs font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none"
+                />
+                <button onClick={handleSaveName} className="p-0.5 text-emerald-600">
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <h3 
+                onClick={() => setIsEditingName(true)}
+                className="font-bold text-slate-800 dark:text-slate-100 truncate text-xs sm:text-sm cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400"
+                title={`${stopwatch.name} (Click to rename)`}
+              >
+                {stopwatch.name}
+              </h3>
+            )}
+            <div className="flex items-center gap-1 text-[10px] text-slate-400">
+              <span className={`w-1.5 h-1.5 rounded-full ${stopwatch.isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} />
+              <span>{stopwatch.isRunning ? 'Running' : elapsedMs > 0 ? 'Paused' : 'Ready'}</span>
+              {stopwatch.laps.length > 0 && <span>• {stopwatch.laps.length} Laps</span>}
+            </div>
+          </div>
+        </div>
+
+        {/* Center: Time Readout */}
+        <div className="font-mono font-bold text-base sm:text-xl text-slate-800 dark:text-slate-100 tabular-nums shrink-0">
+          {parseInt(time.hours, 10) > 0 && `${time.hours}:`}
+          {time.minutes}:{time.seconds}
+          <span className="text-xs sm:text-sm text-slate-400 ml-0.5">.{time.centiseconds}</span>
+        </div>
+
+        {/* Right: Quick Action Controls */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={() => (stopwatch.isRunning ? onPause(stopwatch.id) : onStart(stopwatch.id))}
+            className="p-2 sm:px-3 sm:py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1 text-white shadow-sm transition-all active:scale-95 cursor-pointer"
+            style={{ backgroundColor: theme.accentHex }}
+          >
+            {stopwatch.isRunning ? <Pause className="w-4 h-4 fill-white" /> : <Play className="w-4 h-4 fill-white" />}
+            <span className="hidden sm:inline">{stopwatch.isRunning ? 'Pause' : 'Start'}</span>
+          </button>
+
+          {stopwatch.isRunning && (
+            <button
+              onClick={() => onAddLap(stopwatch.id)}
+              className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs transition-colors cursor-pointer"
+              title="Add Lap"
+            >
+              <Flag className="w-4 h-4" />
+            </button>
+          )}
+
+          <button
+            onClick={() => onReset(stopwatch.id)}
+            disabled={elapsedMs === 0}
+            className={`p-2 rounded-lg text-xs transition-colors ${
+              elapsedMs > 0
+                ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer'
+                : 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
+            }`}
+            title="Reset"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowMenu(!showMenu);
+                setShowColorPicker(false);
+              }}
+              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {showMenu && (
+              <div 
+                style={menuStyle}
+                className="absolute top-full mt-1 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-44 text-xs font-medium space-y-0.5 no-focus-trigger"
+              >
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onOpenFocus(stopwatch.id);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Focus Mode</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    setIsEditingName(true);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Rename</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    setShowColorPicker(true);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer"
+                >
+                  <Palette className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Color Theme</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onDelete(stopwatch.id);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Delete</span>
+                </button>
+              </div>
+            )}
+
+            {showColorPicker && (
+              <div 
+                style={menuStyle}
+                className="absolute top-full mt-1 p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-60 no-focus-trigger"
+              >
+                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+                  Choose Color
+                </div>
+                <ColorPicker
+                  selectedColor={stopwatch.color}
+                  onSelectColor={(color) => {
+                    onUpdateColor(stopwatch.id, color);
+                    setShowColorPicker(false);
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // STANDARD GRID CARD VIEW
+  // ==========================================
   return (
     <div 
       onDoubleClick={handleDoubleClick}
@@ -214,7 +407,7 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
           )}
         </div>
 
-        {/* Right: Consolidated 3-dots Menu Button */}
+        {/* Right: Single 3-dots Menu Button */}
         <div className="relative shrink-0" ref={menuRef}>
           <button
             type="button"
@@ -228,10 +421,11 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
             <MoreVertical className="w-4 h-4" />
           </button>
 
+          {/* More Options Dropdown */}
           {showMenu && (
             <div 
               style={menuStyle}
-              className="absolute top-full mt-1.5 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-44 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 space-y-0.5 text-xs font-medium no-focus-trigger"
+              className="absolute top-full mt-1.5 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-48 sm:w-52 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 space-y-0.5 text-xs font-medium no-focus-trigger"
             >
               <button
                 onClick={() => {
@@ -266,8 +460,6 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
                 <span>Color Theme</span>
               </button>
 
-              <div className="my-1 border-t border-slate-100 dark:border-slate-700/60" />
-
               <button
                 onClick={() => {
                   setShowMenu(false);
@@ -275,27 +467,27 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
                 }}
                 className="w-full px-2.5 py-1.5 text-left rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer whitespace-nowrap"
               >
-                <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                <Trash2 className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                 <span>Delete Stopwatch</span>
               </button>
             </div>
           )}
 
+          {/* Color Picker Popover */}
           {showColorPicker && (
             <div 
               style={menuStyle}
-              className="absolute top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-56 sm:w-60 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 no-focus-trigger"
+              className="absolute top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-64 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 no-focus-trigger"
             >
-              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Color Palette</span>
+              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+                Choose Color
               </div>
               <ColorPicker
                 selectedColor={stopwatch.color}
-                onChange={(color) => {
+                onSelectColor={(color) => {
                   onUpdateColor(stopwatch.id, color);
+                  setShowColorPicker(false);
                 }}
-                size="sm"
               />
             </div>
           )}
@@ -381,7 +573,7 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
       </div>
 
       {/* Expandable Laps Drawer */}
-      {stopwatch.laps.length > 0 && !isCompact && (
+      {stopwatch.laps.length > 0 && (
         <div className="border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50">
           <div className="px-3 sm:px-4 py-2.5 flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
             <button 

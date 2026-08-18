@@ -2,20 +2,20 @@ import React, { useState, useRef, useEffect } from 'react';
 import { TimerItem, ColorName, SoundPreset } from '../types';
 import { getColorTheme } from '../constants/colors';
 import { formatTime } from '../utils/timeFormatter';
-import { soundEngine } from '../utils/audio';
 import { ColorPicker } from './ColorPicker';
+import { soundEngine } from '../utils/audio';
 import { 
   Play, 
   Pause, 
   RotateCcw, 
-  Plus, 
   Maximize2, 
   Trash2, 
   Edit3, 
   Check, 
   Palette, 
+  Plus, 
+  BellRing, 
   Volume2, 
-  BellRing,
   RefreshCw,
   MoreVertical
 } from 'lucide-react';
@@ -26,7 +26,7 @@ interface TimerCardProps {
   onStart: (id: string) => void;
   onPause: (id: string) => void;
   onReset: (id: string) => void;
-  onAddExtraTime: (id: string, extraMs: number) => void;
+  onAddExtraTime: (id: string, ms: number) => void;
   onUpdateName: (id: string, name: string) => void;
   onUpdateColor: (id: string, color: ColorName) => void;
   onUpdateSound: (id: string, sound: SoundPreset) => void;
@@ -36,13 +36,13 @@ interface TimerCardProps {
   isCompact?: boolean;
 }
 
-const SOUND_LABELS: Record<SoundPreset, string> = {
-  chime: 'Chime',
-  digital: 'Digital',
-  bell: 'Bell',
-  marimba: 'Marimba',
-  gentle: 'Gentle',
-};
+const SOUND_PRESETS: { id: SoundPreset; name: string }[] = [
+  { id: 'chime', name: 'Gentle Chime' },
+  { id: 'digital', name: 'Digital Alarm' },
+  { id: 'bell', name: 'Classic Bell' },
+  { id: 'marimba', name: 'Marimba Arpeggio' },
+  { id: 'gentle', name: 'Soft Pulse' },
+];
 
 export const TimerCard: React.FC<TimerCardProps> = ({
   timer,
@@ -57,6 +57,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
   onUpdateRepeat,
   onDelete,
   onOpenFocus,
+  isCompact = false,
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(timer.name);
@@ -71,7 +72,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
   useEffect(() => {
     if ((showMenu || showColorPicker || showSoundPicker) && menuRef.current) {
       const rect = menuRef.current.getBoundingClientRect();
-      const popoverWidth = showSoundPicker ? 240 : showColorPicker ? 240 : 190;
+      const popoverWidth = showColorPicker ? 240 : showSoundPicker ? 260 : 180;
       const leftEdge = rect.right - popoverWidth;
 
       if (leftEdge < 12) {
@@ -92,42 +93,43 @@ export const TimerCard: React.FC<TimerCardProps> = ({
         setShowSoundPicker(false);
       }
     };
-    if (showMenu || showColorPicker || showSoundPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showMenu, showColorPicker, showSoundPicker]);
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('button, input, a, [role="button"], .no-focus-trigger')) {
-      return;
-    }
-    const now = Date.now();
-    if (now - lastTapRef.current < 320) {
-      onOpenFocus(timer.id);
-      lastTapRef.current = 0;
-    } else {
-      lastTapRef.current = now;
-    }
-  };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleDoubleClick = (e: React.MouseEvent) => {
+    // Only open focus mode if double clicking the card body, not buttons or inputs
     const target = e.target as HTMLElement;
-    if (target.closest('button, input, a, [role="button"], .no-focus-trigger')) {
+    if (
+      target.closest('button') || 
+      target.closest('input') || 
+      target.closest('.no-focus-trigger')
+    ) {
       return;
     }
     onOpenFocus(timer.id);
   };
 
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('button') || 
+      target.closest('input') || 
+      target.closest('.no-focus-trigger')
+    ) {
+      return;
+    }
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTapRef.current;
+    if (tapLength < 300 && tapLength > 0) {
+      onOpenFocus(timer.id);
+      e.preventDefault();
+    }
+    lastTapRef.current = currentTime;
+  };
+
   const theme = getColorTheme(timer.color);
   const time = formatTime(remainingMs);
-
-  // Math for SVG progress ring
-  const progressRatio = timer.duration > 0 ? Math.max(0, Math.min(1, remainingMs / timer.duration)) : 0;
-  const strokeDashoffset = 283 * (1 - progressRatio); // circumference of r=45 is ~282.7
 
   const handleSaveName = () => {
     if (nameInput.trim()) {
@@ -138,10 +140,256 @@ export const TimerCard: React.FC<TimerCardProps> = ({
     setIsEditingName(false);
   };
 
-  const testSound = (sound: SoundPreset) => {
-    soundEngine.playAlert(sound);
+  const handlePreviewSound = (soundId: SoundPreset) => {
+    soundEngine.playAlert(soundId);
   };
 
+  // Circular progress math (circumference = 2 * PI * 45 ≈ 283)
+  const progressRatio = timer.duration > 0 ? Math.max(0, Math.min(1, remainingMs / timer.duration)) : 0;
+  const strokeDashoffset = 283 * (1 - progressRatio);
+
+  // ==========================================
+  // COMPACT / LIST ROW VIEW
+  // ==========================================
+  if (isCompact) {
+    return (
+      <div 
+        onDoubleClick={handleDoubleClick}
+        onTouchEnd={handleTouchEnd}
+        className={`relative rounded-xl transition-all border-l-4 border-y border-r ${
+          timer.isCompleted
+            ? 'border-rose-400 dark:border-rose-600 bg-rose-50/90 dark:bg-rose-950/40 animate-pulse'
+            : `${theme.border} bg-white dark:bg-slate-900/90`
+        } shadow-sm hover:shadow-md p-3 flex items-center justify-between gap-3 select-none ${
+          timer.isRunning ? `ring-2 ring-offset-1 dark:ring-offset-slate-950 ${theme.glow}` : ''
+        }`}
+        style={{
+          borderLeftColor: timer.isCompleted ? '#f43f5e' : theme.accentHex,
+        }}
+      >
+        {/* Left: Info & Name */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={() => {
+              setShowColorPicker(!showColorPicker);
+              setShowMenu(false);
+            }}
+            className="w-3.5 h-3.5 rounded-full ring-2 ring-white dark:ring-slate-800 shadow-sm transition-transform active:scale-90 hover:scale-110 cursor-pointer shrink-0"
+            style={{ backgroundColor: theme.accentHex }}
+            title="Change Color"
+          />
+
+          <div className="min-w-0 flex-1">
+            {isEditingName ? (
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  onBlur={handleSaveName}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                  autoFocus
+                  className="w-full text-xs font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none"
+                />
+                <button onClick={handleSaveName} className="p-0.5 text-emerald-600">
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <h3 
+                onClick={() => setIsEditingName(true)}
+                className="font-bold text-slate-800 dark:text-slate-100 truncate text-xs sm:text-sm cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400"
+                title={`${timer.name} (Click to rename)`}
+              >
+                {timer.name}
+              </h3>
+            )}
+            <div className="flex items-center gap-1 text-[10px] text-slate-400">
+              <span className={`w-1.5 h-1.5 rounded-full ${timer.isCompleted ? 'bg-rose-500 animate-bounce' : timer.isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} />
+              <span>{timer.isCompleted ? "Time's Up!" : timer.isRunning ? 'Running' : remainingMs < timer.duration ? 'Paused' : 'Ready'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Center: Time Readout */}
+        <div className="font-mono font-bold text-base sm:text-xl text-slate-800 dark:text-slate-100 tabular-nums shrink-0">
+          {parseInt(time.hours, 10) > 0 && `${time.hours}:`}
+          {time.minutes}:{time.seconds}
+        </div>
+
+        {/* Right: Quick Action Controls */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {timer.isCompleted ? (
+            <button
+              onClick={() => onReset(timer.id)}
+              className="p-2 sm:px-3 sm:py-1.5 rounded-lg font-bold text-xs bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Dismiss</span>
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => (timer.isRunning ? onPause(timer.id) : onStart(timer.id))}
+                className="p-2 sm:px-3 sm:py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1 text-white shadow-sm transition-all active:scale-95 cursor-pointer"
+                style={{ backgroundColor: theme.accentHex }}
+              >
+                {timer.isRunning ? <Pause className="w-4 h-4 fill-white" /> : <Play className="w-4 h-4 fill-white" />}
+                <span className="hidden sm:inline">{timer.isRunning ? 'Pause' : 'Start'}</span>
+              </button>
+
+              <button
+                onClick={() => onAddExtraTime(timer.id, 60 * 1000)}
+                className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
+                title="Add 1m"
+              >
+                +1m
+              </button>
+
+              <button
+                onClick={() => onReset(timer.id)}
+                disabled={remainingMs === timer.duration && !timer.isRunning}
+                className={`p-2 rounded-lg text-xs transition-colors ${
+                  remainingMs < timer.duration || timer.isRunning
+                    ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer'
+                    : 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
+                }`}
+                title="Reset"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </>
+          )}
+
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowMenu(!showMenu);
+                setShowColorPicker(false);
+                setShowSoundPicker(false);
+              }}
+              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {showMenu && (
+              <div 
+                style={menuStyle}
+                className="absolute top-full mt-1 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-44 text-xs font-medium space-y-0.5 no-focus-trigger"
+              >
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onOpenFocus(timer.id);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Focus Mode</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    setIsEditingName(true);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Rename</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    setShowColorPicker(true);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer"
+                >
+                  <Palette className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Color Theme</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    setShowSoundPicker(true);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer"
+                >
+                  <Volume2 className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Alarm Sound</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onDelete(timer.id);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Delete</span>
+                </button>
+              </div>
+            )}
+
+            {showColorPicker && (
+              <div 
+                style={menuStyle}
+                className="absolute top-full mt-1 p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-60 no-focus-trigger"
+              >
+                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+                  Choose Color
+                </div>
+                <ColorPicker
+                  selectedColor={timer.color}
+                  onSelectColor={(color) => {
+                    onUpdateColor(timer.id, color);
+                    setShowColorPicker(false);
+                  }}
+                />
+              </div>
+            )}
+
+            {showSoundPicker && (
+              <div 
+                style={menuStyle}
+                className="absolute top-full mt-1 p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-64 no-focus-trigger"
+              >
+                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+                  Alarm Sound
+                </div>
+                <div className="space-y-1">
+                  {SOUND_PRESETS.map((snd) => (
+                    <button
+                      key={snd.id}
+                      onClick={() => {
+                        onUpdateSound(timer.id, snd.id);
+                        handlePreviewSound(snd.id);
+                        setShowSoundPicker(false);
+                      }}
+                      className={`w-full px-2.5 py-1.5 text-xs text-left rounded-lg flex items-center justify-between ${
+                        timer.soundAlert === snd.id
+                          ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold'
+                          : 'hover:bg-slate-100 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200'
+                      }`}
+                    >
+                      <span>{snd.name}</span>
+                      {timer.soundAlert === snd.id && <Check className="w-3.5 h-3.5" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // STANDARD GRID CARD VIEW
+  // ==========================================
   return (
     <div 
       onDoubleClick={handleDoubleClick}
@@ -248,24 +496,8 @@ export const TimerCard: React.FC<TimerCardProps> = ({
 
               <button
                 onClick={() => {
-                  setShowSoundPicker(true);
                   setShowMenu(false);
-                }}
-                className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center justify-between cursor-pointer"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Volume2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="whitespace-nowrap">Alarm Sound</span>
-                </div>
-                <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/60 shrink-0">
-                  {SOUND_LABELS[timer.soundAlert]}
-                </span>
-              </button>
-
-              <button
-                onClick={() => {
                   setShowColorPicker(true);
-                  setShowMenu(false);
                 }}
                 className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer whitespace-nowrap"
               >
@@ -273,7 +505,16 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 <span>Color Theme</span>
               </button>
 
-              <div className="my-1 border-t border-slate-100 dark:border-slate-700/60" />
+              <button
+                onClick={() => {
+                  setShowMenu(false);
+                  setShowSoundPicker(true);
+                }}
+                className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+              >
+                <Volume2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>Alarm Sound</span>
+              </button>
 
               <button
                 onClick={() => {
@@ -282,97 +523,100 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 }}
                 className="w-full px-2.5 py-1.5 text-left rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer whitespace-nowrap"
               >
-                <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                <Trash2 className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                 <span>Delete Timer</span>
               </button>
             </div>
           )}
 
-          {/* Sound Preset Picker Submenu */}
-          {showSoundPicker && (
-            <div 
-              style={menuStyle}
-              className="absolute top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-56 sm:w-60 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 no-focus-trigger"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                  <Volume2 className="w-3.5 h-3.5 text-indigo-500" />
-                  Alarm Tone
-                </span>
-              </div>
-              <div className="space-y-1 mb-3">
-                {(['chime', 'digital', 'bell', 'marimba', 'gentle'] as SoundPreset[]).map((snd) => (
-                  <button
-                    key={snd}
-                    onClick={() => {
-                      onUpdateSound(timer.id, snd);
-                      testSound(snd);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${
-                      timer.soundAlert === snd
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold'
-                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50'
-                    }`}
-                  >
-                    <span>{SOUND_LABELS[snd]}</span>
-                    {timer.soundAlert === snd && <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />}
-                  </button>
-                ))}
-              </div>
-
-              <div className="border-t border-slate-100 dark:border-slate-700/60 pt-2.5">
-                <div className="text-[11px] font-bold text-slate-700 dark:text-slate-200 mb-1.5">
-                  Repeat Alert
-                </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {[
-                    { label: 'Once (1x)', val: 1 },
-                    { label: 'Repeat 3x', val: 3 },
-                    { label: 'Repeat 5x', val: 5 },
-                    { label: 'Loop (Until Stop)', val: 0 },
-                  ].map((rep) => {
-                    const currentRepeat = timer.soundRepeat !== undefined ? timer.soundRepeat : 3;
-                    const isSelected = currentRepeat === rep.val;
-                    return (
-                      <button
-                        key={rep.val}
-                        onClick={() => {
-                          if (onUpdateRepeat) {
-                            onUpdateRepeat(timer.id, rep.val);
-                          }
-                        }}
-                        className={`px-2 py-1.5 rounded-lg text-[11px] font-medium text-center transition-colors cursor-pointer border ${
-                          isSelected
-                            ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 font-bold'
-                            : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50'
-                        }`}
-                      >
-                        {rep.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Color Palette Popover */}
+          {/* Color Picker Popover */}
           {showColorPicker && (
             <div 
               style={menuStyle}
-              className="absolute top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-56 sm:w-60 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 no-focus-trigger"
+              className="absolute top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-64 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 no-focus-trigger"
             >
-              <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Color Palette</span>
+              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
+                Choose Color
               </div>
               <ColorPicker
                 selectedColor={timer.color}
-                onChange={(color) => {
+                onSelectColor={(color) => {
                   onUpdateColor(timer.id, color);
+                  setShowColorPicker(false);
                 }}
-                size="sm"
               />
+            </div>
+          )}
+
+          {/* Sound Preset Picker Popover */}
+          {showSoundPicker && (
+            <div 
+              style={menuStyle}
+              className="absolute top-full mt-1.5 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-72 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 space-y-2 no-focus-trigger"
+            >
+              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 px-1">
+                Select Alarm Sound
+              </div>
+              <div className="space-y-1">
+                {SOUND_PRESETS.map((preset) => {
+                  const isSelected = timer.soundAlert === preset.id;
+                  return (
+                    <div
+                      key={preset.id}
+                      className={`flex items-center justify-between p-2 rounded-lg transition-colors text-xs ${
+                        isSelected 
+                          ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold' 
+                          : 'hover:bg-slate-100 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200'
+                      }`}
+                    >
+                      <button
+                        onClick={() => {
+                          onUpdateSound(timer.id, preset.id);
+                          handlePreviewSound(preset.id);
+                          setShowSoundPicker(false);
+                        }}
+                        className="flex-1 text-left flex items-center gap-2 cursor-pointer"
+                      >
+                        <span>{preset.name}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5" />}
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePreviewSound(preset.id);
+                        }}
+                        className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-400 hover:text-slate-700 dark:hover:text-slate-100 transition-colors"
+                        title="Preview Audio"
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Repeat Count selector */}
+              {onUpdateRepeat && (
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                  <span className="text-[11px] font-medium">Alarm Repeat:</span>
+                  <div className="flex items-center gap-1">
+                    {[1, 3, 5].map((cnt) => (
+                      <button
+                        key={cnt}
+                        onClick={() => onUpdateRepeat(timer.id, cnt)}
+                        className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                          (timer.soundRepeat ?? 3) === cnt
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                        }`}
+                      >
+                        {cnt}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
