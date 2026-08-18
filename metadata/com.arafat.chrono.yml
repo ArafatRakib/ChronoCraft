@@ -3,13 +3,13 @@ Categories:
   - Utilities
 License: MIT
 AuthorName: Arafat Hossain
-SourceCode: https://github.com/arafathossain/chrono
-IssueTracker: https://github.com/arafathossain/chrono/issues
+SourceCode: https://github.com/arafathossain/chronocraft
+IssueTracker: https://github.com/arafathossain/chronocraft/issues
 
-AutoName: Chrono
+AutoName: 'ChronoCraft: Multi-Timer & Stopwatch'
 Summary: Privacy-first multi-timer and multi-stopwatch with focus mode
 Description: |-
-  Chrono is an elegant, privacy-first multi-timer and multi-stopwatch application designed for productivity, workouts, cooking, studying, and time management.
+  ChronoCraft is an elegant, privacy-first concurrent multi-timer and multi-stopwatch application designed for productivity, workouts, cooking, studying, and time management.
 
   Features:
   * Concurrent timers & stopwatches running simultaneously
@@ -20,7 +20,7 @@ Description: |-
   * Synthesized Web Audio alarm sounds (no proprietary blobs)
 
 RepoType: git
-Repo: https://github.com/arafathossain/chrono.git
+Repo: https://github.com/arafathossain/chronocraft.git
 
 Builds:
   - versionName: 1.0.0

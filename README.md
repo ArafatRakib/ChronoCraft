@@ -1,4 +1,4 @@
-# ⏱️ ChronoCraft
+# ⏱️ ChronoCraft: Multi Timer & Stopwatch
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/ArafatRakib/ChronoCraft/main/assets/icon.png" alt="ChronoCraft Logo" width="120" height="120" style="border-radius: 28px;" />
@@ -43,6 +43,16 @@ Most timer apps assume you only live one life at a time:
 4. Wondering how long you've spent writing a `README.md` (42 minutes and counting).
 
 ChronoCraft lets you create, run, color-code, and organize **unlimited concurrent stopwatches and countdown timers** on a single unified canvas.
+
+---
+
+## 🐣 The Story Behind the App
+
+ChronoCraft was born in a hospital delivery room. 
+
+When my wife went into labor, I needed to track two distinct metrics simultaneously: **the duration of each contraction** and **the precise interval between them**. Every free app I tried was either locked behind a paywall, cluttered with ads, or incapable of tracking overlapping timers clearly. 
+
+Out of frustration and necessity, I built ChronoCraft on the spot to manage multiple concurrent timing needs—starting with bringing our baby into the world.
 
 ---
 
@@ -114,5 +124,5 @@ Feel free to open an [Issue](https://github.com/ArafatRakib/ChronoCraft/issues) 
 Distributed under the **MIT License**. See `LICENSE` for more information.
 
 <p align="center">
-  Crafted with ❤️ and too much caffeine by <a href="https://github.com/ArafatRakib">Arafat Rakib</a>.
+  Crafted with ❤️ by <a href="https://github.com/ArafatRakib">Arafat Rakib</a>.
 </p>

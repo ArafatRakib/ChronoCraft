@@ -1,4 +1,4 @@
-<b>Chrono</b> is an elegant, privacy-first multi-timer and multi-stopwatch application designed for productivity, workouts, cooking, studying, and time management.
+<b>ChronoCraft: Multi-Timer & Stopwatch</b> is an elegant, privacy-first concurrent multi-timer and multi-stopwatch application designed for productivity, workouts, cooking, studying, and time management.
 
 <h3>Key Features:</h3>
 • <b>Concurrent Multi-Timers & Stopwatches:</b> Run as many independent timers and stopwatches simultaneously as you need.
@@ -10,4 +10,4 @@
 • <b>Organized Views & Filter:</b> Filter by status (running, paused, completed) or color tags, with quick bulk actions.
 
 <h3>FOSS & Privacy Commitment:</h3>
-Chrono is Free and Open Source Software (FOSS) released under the MIT License. It does not require an account, has no advertisements, and contains zero trackers.
+ChronoCraft is Free and Open Source Software (FOSS) released under the MIT License. It does not require an account, has no advertisements, and contains zero trackers.

@@ -10,7 +10,7 @@ export interface CapacitorConfig {
 
 const config: CapacitorConfig = {
   appId: 'com.arafat.chrono',
-  appName: 'Chrono',
+  appName: 'ChronoCraft',
   webDir: 'dist',
   server: {
     androidScheme: 'https',

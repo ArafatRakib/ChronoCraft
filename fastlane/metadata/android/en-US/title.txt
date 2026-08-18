@@ -1,1 +1,1 @@
-Chrono
+ChronoCraft: Multi-Timer & Stopwatch
