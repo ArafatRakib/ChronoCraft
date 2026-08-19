@@ -21,7 +21,8 @@ import {
   RefreshCw, 
   MoreVertical,
   BookmarkPlus,
-  Flame
+  Flame,
+  Clock
 } from 'lucide-react';
 
 interface TimerCardProps {
@@ -142,6 +143,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
   const isOvertime = timer.isCompleted && (timer.overtimeEnabled !== false);
   const displayMs = isOvertime ? overtimeMs : remainingMs;
   const time = formatTime(displayMs);
+  const durationTime = formatTime(timer.duration);
 
   const handleSaveName = () => {
     const formatted = capitalizeWords(nameInput);
@@ -197,11 +199,12 @@ export const TimerCard: React.FC<TimerCardProps> = ({
             >
               {timer.name}
             </h3>
-            <div className="flex items-center gap-1 text-[10px] text-slate-400">
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
               <span className={`w-1.5 h-1.5 rounded-full ${timer.isCompleted ? 'bg-rose-500 animate-bounce' : timer.isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} />
               <span className={timer.isCompleted ? 'font-bold text-rose-500' : ''}>
                 {isOvertime ? `Overtime +${time.minutes}:${time.seconds}` : timer.isCompleted ? "Time's Up!" : timer.isRunning ? 'Running' : remainingMs < timer.duration ? 'Paused' : 'Ready'}
               </span>
+              <span className="text-slate-400 dark:text-slate-500">• Set for {parseInt(durationTime.hours, 10) > 0 && `${durationTime.hours}:`}{durationTime.minutes}:{durationTime.seconds}</span>
             </div>
           </div>
         </div>
@@ -624,43 +627,51 @@ export const TimerCard: React.FC<TimerCardProps> = ({
           </div>
         ) : (
           /* Circular Progress & Clock Display */
-          <div className="relative flex items-center justify-center my-0.5">
-            <svg className="w-28 h-28 xs:w-32 xs:h-32 sm:w-44 sm:h-44 -rotate-90" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                className="stroke-slate-100 dark:stroke-slate-800 fill-none"
-                strokeWidth="6"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                className="fill-none transition-all duration-300 ease-linear"
-                strokeWidth="6"
-                strokeDasharray="283"
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                stroke={theme.accentHex}
-              />
-            </svg>
+          <div className="flex flex-col items-center justify-center my-0.5">
+            {/* Set Duration Pill */}
+            <div className="flex items-center justify-center gap-1 mb-2 text-[10px] sm:text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-0.5 rounded-full">
+              <Clock className="w-3 h-3 text-slate-400" />
+              <span>Set for: {parseInt(durationTime.hours, 10) > 0 && `${durationTime.hours}:`}{durationTime.minutes}:{durationTime.seconds}</span>
+            </div>
 
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <div className="inline-flex items-baseline font-mono tracking-tight font-bold select-none">
-                {parseInt(time.hours, 10) > 0 && (
-                  <>
-                    <span className="text-sm xs:text-base sm:text-2xl lg:text-3xl text-slate-800 dark:text-slate-100">{time.hours}</span>
-                    <span className="text-xs xs:text-sm sm:text-lg text-slate-400 dark:text-slate-500 mx-0.5">:</span>
-                  </>
-                )}
-                <span className="text-lg xs:text-2xl sm:text-3xl lg:text-4xl text-slate-800 dark:text-slate-100">{time.minutes}</span>
-                <span className="text-sm xs:text-lg sm:text-2xl text-slate-400 dark:text-slate-500 mx-0.5">:</span>
-                <span className="text-lg xs:text-2xl sm:text-3xl lg:text-4xl text-slate-800 dark:text-slate-100">{time.seconds}</span>
-              </div>
+            <div className="relative flex items-center justify-center">
+              <svg className="w-28 h-28 xs:w-32 xs:h-32 sm:w-44 sm:h-44 -rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  className="stroke-slate-100 dark:stroke-slate-800 fill-none"
+                  strokeWidth="6"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  className="fill-none transition-all duration-300 ease-linear"
+                  strokeWidth="6"
+                  strokeDasharray="283"
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                  stroke={theme.accentHex}
+                />
+              </svg>
 
-              <div className="text-[9px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
-                {timer.isRunning ? 'Running' : remainingMs < timer.duration ? 'Paused' : 'Ready'}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <div className="inline-flex items-baseline font-mono tracking-tight font-bold select-none">
+                  {parseInt(time.hours, 10) > 0 && (
+                    <>
+                      <span className="text-sm xs:text-base sm:text-2xl lg:text-3xl text-slate-800 dark:text-slate-100">{time.hours}</span>
+                      <span className="text-xs xs:text-sm sm:text-lg text-slate-400 dark:text-slate-500 mx-0.5">:</span>
+                    </>
+                  )}
+                  <span className="text-lg xs:text-2xl sm:text-3xl lg:text-4xl text-slate-800 dark:text-slate-100">{time.minutes}</span>
+                  <span className="text-sm xs:text-lg sm:text-2xl text-slate-400 dark:text-slate-500 mx-0.5">:</span>
+                  <span className="text-lg xs:text-2xl sm:text-3xl lg:text-4xl text-slate-800 dark:text-slate-100">{time.seconds}</span>
+                </div>
+
+                <div className="text-[9px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
+                  {timer.isRunning ? 'Running' : remainingMs < timer.duration ? 'Paused' : 'Ready'}
+                </div>
               </div>
             </div>
           </div>

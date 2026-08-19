@@ -6,7 +6,9 @@ class SoundEngine {
   private getAudioContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
       }
@@ -18,9 +20,19 @@ class SoundEngine {
   }
 
   // Track active repeating/looping alarms per timerId
-  private activeAlarms: Map<string, { intervalId: ReturnType<typeof setInterval>; repeatsLeft: number }> = new Map();
+  private activeAlarms: Map<
+    string,
+    { intervalId: ReturnType<typeof setInterval>; repeatsLeft: number }
+  > = new Map();
 
   public playAlert(preset: SoundPreset = 'chime') {
+    // Hardware vibration on alert
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate([400, 150, 400, 150, 600]);
+      } catch {}
+    }
+
     const ctx = this.getAudioContext();
     if (!ctx) return;
 
@@ -37,7 +49,7 @@ class SoundEngine {
           osc.frequency.setValueAtTime(freq, now + idx * 0.12);
 
           gain.gain.setValueAtTime(0, now + idx * 0.12);
-          gain.gain.linearRampToValueAtTime(0.25, now + idx * 0.12 + 0.02);
+          gain.gain.linearRampToValueAtTime(0.5, now + idx * 0.12 + 0.02);
           gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.6);
 
           osc.connect(gain);
@@ -50,23 +62,30 @@ class SoundEngine {
       }
 
       case 'digital': {
-        const freqs = [880, 880, 880];
-        freqs.forEach((freq, idx) => {
+        // High-penetration dual-frequency square alarm (880Hz + 1760Hz)
+        const beeps = [0, 0.15, 0.3, 0.45];
+        beeps.forEach((delay) => {
           const osc = ctx.createOscillator();
+          const oscHarmonic = ctx.createOscillator();
           const gain = ctx.createGain();
 
           osc.type = 'square';
-          osc.frequency.setValueAtTime(freq, now + idx * 0.15);
+          osc.frequency.setValueAtTime(1046.5, now + delay);
+          oscHarmonic.type = 'square';
+          oscHarmonic.frequency.setValueAtTime(2093.0, now + delay);
 
-          gain.gain.setValueAtTime(0, now + idx * 0.15);
-          gain.gain.linearRampToValueAtTime(0.15, now + idx * 0.15 + 0.01);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.15 + 0.1);
+          gain.gain.setValueAtTime(0, now + delay);
+          gain.gain.linearRampToValueAtTime(0.4, now + delay + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.09);
 
           osc.connect(gain);
+          oscHarmonic.connect(gain);
           gain.connect(ctx.destination);
 
-          osc.start(now + idx * 0.15);
-          osc.stop(now + idx * 0.15 + 0.12);
+          osc.start(now + delay);
+          oscHarmonic.start(now + delay);
+          osc.stop(now + delay + 0.11);
+          oscHarmonic.stop(now + delay + 0.11);
         });
         break;
       }
@@ -76,10 +95,10 @@ class SoundEngine {
         const gain = ctx.createGain();
 
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, now); // D5
-        osc.frequency.exponentialRampToValueAtTime(293.66, now + 1.2);
+        osc.frequency.setValueAtTime(659.25, now); // E5
+        osc.frequency.exponentialRampToValueAtTime(329.63, now + 1.2);
 
-        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.setValueAtTime(0.5, now);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.5);
 
         osc.connect(gain);
@@ -99,7 +118,7 @@ class SoundEngine {
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(freq, now + idx * 0.1);
 
-          gain.gain.setValueAtTime(0.35, now + idx * 0.1);
+          gain.gain.setValueAtTime(0.45, now + idx * 0.1);
           gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.4);
 
           osc.connect(gain);
@@ -121,7 +140,7 @@ class SoundEngine {
           osc.frequency.setValueAtTime(freq, now);
 
           gain.gain.setValueAtTime(0.01, now);
-          gain.gain.linearRampToValueAtTime(0.12, now + 0.2);
+          gain.gain.linearRampToValueAtTime(0.25, now + 0.2);
           gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
 
           osc.connect(gain);
@@ -139,6 +158,12 @@ class SoundEngine {
    * Short 3-2-1 countdown pip
    */
   public playCountdownPip(highOrSec: boolean | number = false) {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate(highOrSec ? 150 : 60);
+      } catch {}
+    }
+
     const ctx = this.getAudioContext();
     if (!ctx) return;
 
@@ -150,7 +175,7 @@ class SoundEngine {
     osc.type = 'sine';
     osc.frequency.setValueAtTime(isHigh ? 1318.5 : 880, now); // E6 vs A5
 
-    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.setValueAtTime(0.3, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + (isHigh ? 0.4 : 0.12));
 
     osc.connect(gain);
@@ -164,6 +189,12 @@ class SoundEngine {
    * Interval phase transition fanfare (Work start / Rest start)
    */
   public playPhaseTransition(isWork: boolean) {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate(isWork ? [200, 100, 200] : [150, 100, 150]);
+      } catch {}
+    }
+
     const ctx = this.getAudioContext();
     if (!ctx) return;
 
@@ -176,7 +207,7 @@ class SoundEngine {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, now + idx * 0.1);
 
-      gain.gain.setValueAtTime(0.25, now + idx * 0.1);
+      gain.gain.setValueAtTime(0.35, now + idx * 0.1);
       gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.35);
 
       osc.connect(gain);
@@ -191,6 +222,12 @@ class SoundEngine {
    * Stopwatch Target Reached celebratory chime
    */
   public playTargetReached() {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate([200, 100, 200, 100, 300]);
+      } catch {}
+    }
+
     const ctx = this.getAudioContext();
     if (!ctx) return;
 
@@ -203,7 +240,7 @@ class SoundEngine {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, now + idx * 0.09);
 
-      gain.gain.setValueAtTime(0.25, now + idx * 0.09);
+      gain.gain.setValueAtTime(0.35, now + idx * 0.09);
       gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.5);
 
       osc.connect(gain);

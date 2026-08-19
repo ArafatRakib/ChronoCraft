@@ -165,6 +165,7 @@ export const FocusModal: React.FC<FocusModalProps> = ({
   }
 
   const time = formatTime(displayMs);
+  const timerDurationFormatted = isTimer && timer ? formatTime(timer.duration) : null;
 
   // Progress ratio calculation
   let progressRatio = 0;
@@ -295,6 +296,14 @@ export const FocusModal: React.FC<FocusModalProps> = ({
                     <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-200/80 dark:bg-white/10 px-3 py-1 rounded-full">
                       Round {currentRound} of {totalRounds}
                     </span>
+                  </div>
+                )}
+
+                {/* Timer Duration Badge */}
+                {isTimer && timerDurationFormatted && (
+                  <div className="mb-2 sm:mb-4 flex items-center justify-center gap-1.5 px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold tracking-wide shadow-sm text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-white/10 border border-slate-300/60 dark:border-white/15">
+                    <Clock className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+                    <span>Set for {parseInt(timerDurationFormatted.hours, 10) > 0 && `${timerDurationFormatted.hours}:`}{timerDurationFormatted.minutes}:{timerDurationFormatted.seconds}</span>
                   </div>
                 )}
 

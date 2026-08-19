@@ -464,13 +464,13 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
 
       {/* Target Goal Banner if configured */}
       {hasTarget && (
-        <div className="px-3 pt-2 sm:px-4">
-          <div className="flex items-center justify-between text-[11px] mb-1">
-            <span className="font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+        <div className="px-3 pt-2 sm:px-4 w-full">
+          <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] mb-1">
+            <span className="font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1 shrink-0">
               <Target className="w-3 h-3 text-indigo-500" />
-              Target Goal: {targetFormatted.minutes}:{targetFormatted.seconds}
+              <span>Target: {targetFormatted.minutes}:{targetFormatted.seconds}</span>
             </span>
-            <span className={`font-bold font-mono ${isGoalReached ? 'text-emerald-500' : 'text-indigo-600 dark:text-indigo-400'}`}>
+            <span className={`font-bold font-mono text-[10px] sm:text-[11px] shrink-0 ${isGoalReached ? 'text-emerald-500' : 'text-indigo-600 dark:text-indigo-400'}`}>
               {isGoalReached ? '🎯 GOAL REACHED' : `${goalProgressPercent}%`}
             </span>
           </div>

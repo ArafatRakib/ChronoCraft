@@ -39,6 +39,7 @@ import { wakeLockManager } from './utils/wakeLock';
 import { mediaSessionManager } from './utils/mediaSession';
 import { backgroundNotificationService, ActiveItemSummary } from './utils/backgroundNotificationService';
 import { Navbar } from './components/Navbar';
+import { NotificationPermissionBanner } from './components/NotificationPermissionBanner';
 import { StopwatchCard } from './components/StopwatchCard';
 import { TimerCard } from './components/TimerCard';
 import { IntervalCard } from './components/IntervalCard';
@@ -1087,6 +1088,8 @@ export default function App() {
         voiceEnabled={voiceEnabled}
         onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
       />
+
+      <NotificationPermissionBanner />
 
       {/* Sub Toolbar: Search, Color Filter & Quick Create Buttons */}
       <div className="relative z-30 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full pt-3 sm:pt-6 pb-2">
