@@ -32,10 +32,12 @@ import {
   getIntervalState
 } from './utils/storage';
 import { capitalizeWords } from './utils/textFormatters';
+import { formatTime } from './utils/timeFormatter';
 import { soundEngine } from './utils/audio';
 import { speechManager } from './utils/speech';
 import { wakeLockManager } from './utils/wakeLock';
 import { mediaSessionManager } from './utils/mediaSession';
+import { backgroundNotificationService, ActiveItemSummary } from './utils/backgroundNotificationService';
 import { Navbar } from './components/Navbar';
 import { StopwatchCard } from './components/StopwatchCard';
 import { TimerCard } from './components/TimerCard';
@@ -234,6 +236,10 @@ export default function App() {
           const elapsed = getStopwatchElapsed(sw, currentNow);
           if (elapsed >= sw.targetGoalMs && !reachedTargetGoals.current.has(sw.id)) {
             reachedTargetGoals.current.add(sw.id);
+            backgroundNotificationService.notifyCompletion(
+              `Goal Reached: ${sw.name}`,
+              `Target of ${Math.round(sw.targetGoalMs / 60000)} minutes completed!`
+            );
             if (!isMuted) {
               soundEngine.playTargetReached();
               if (voiceEnabled) {
@@ -265,12 +271,18 @@ export default function App() {
 
             if (remaining <= 0) {
               hasChanges = true;
-              if (!isMuted && !firedTimerIds.current.has(t.id)) {
-                soundEngine.startAlarm(t.id, t.soundAlert, t.soundRepeat !== undefined ? t.soundRepeat : 3);
-                if (t.voiceEnabled !== false && voiceEnabled) {
-                  speechManager.announceTimerFinished(t.name);
-                }
+              if (!firedTimerIds.current.has(t.id)) {
                 firedTimerIds.current.add(t.id);
+                backgroundNotificationService.notifyCompletion(
+                  `Time's Up: ${t.name}`,
+                  'Your timer has finished!'
+                );
+                if (!isMuted) {
+                  soundEngine.startAlarm(t.id, t.soundAlert, t.soundRepeat !== undefined ? t.soundRepeat : 3);
+                  if (t.voiceEnabled !== false && voiceEnabled) {
+                    speechManager.announceTimerFinished(t.name);
+                  }
+                }
               }
 
               return {
@@ -320,6 +332,10 @@ export default function App() {
 
             if (isLastPhase && isLastRound) {
               // Workout completed!
+              backgroundNotificationService.notifyCompletion(
+                `Workout Complete: ${inv.name}`,
+                `All ${inv.totalRounds} rounds finished!`
+              );
               if (!isMuted) {
                 soundEngine.playAlert(inv.soundAlert);
                 if (inv.voiceEnabled !== false && voiceEnabled) {
@@ -392,6 +408,7 @@ export default function App() {
   // STOPWATCH ACTIONS
   // ==========================================
   const handleStartStopwatch = (id: string) => {
+    backgroundNotificationService.requestNotificationPermission();
     setStopwatches((prev) =>
       prev.map((sw) => (sw.id === id ? { ...sw, isRunning: true, startedAt: Date.now() } : sw))
     );
@@ -467,6 +484,7 @@ export default function App() {
   const handleStartTimer = (id: string) => {
     soundEngine.stopAlarm(id);
     firedTimerIds.current.delete(id);
+    backgroundNotificationService.requestNotificationPermission();
     setTimers((prev) =>
       prev.map((t) =>
         t.id === id ? { ...t, isRunning: true, startedAt: Date.now(), isCompleted: false } : t
@@ -569,6 +587,7 @@ export default function App() {
   // INTERVAL ACTIONS
   // ==========================================
   const handleStartInterval = (id: string) => {
+    backgroundNotificationService.requestNotificationPermission();
     setIntervals((prev) =>
       prev.map((inv) => (inv.id === id ? { ...inv, isRunning: true, startedAt: Date.now() } : inv))
     );
@@ -764,6 +783,7 @@ export default function App() {
   // BATCH ACTIONS
   // ==========================================
   const handleStartAll = () => {
+    backgroundNotificationService.requestNotificationPermission();
     const cur = Date.now();
     setStopwatches((prev) =>
       prev.map((sw) => (sw.isRunning ? sw : { ...sw, isRunning: true, startedAt: cur }))
@@ -867,6 +887,178 @@ export default function App() {
   const focusedTimer = timers.find((t) => t.id === focusId);
   const focusedInterval = intervals.find((inv) => inv.id === focusId);
   const analyticsStopwatch = stopwatches.find((sw) => sw.id === analyticsStopwatchId);
+
+  // Register MediaSession / Lock Screen action handlers
+  useEffect(() => {
+    backgroundNotificationService.registerActionCallbacks({
+      onPlay: () => {
+        if (focusId) {
+          if (focusedStopwatch) handleStartStopwatch(focusId);
+          else if (focusedTimer) handleStartTimer(focusId);
+          else if (focusedInterval) handleStartInterval(focusId);
+        } else {
+          handleStartAll();
+        }
+      },
+      onPause: () => {
+        if (focusId) {
+          if (focusedStopwatch) handlePauseStopwatch(focusId);
+          else if (focusedTimer) handlePauseTimer(focusId);
+          else if (focusedInterval) handlePauseInterval(focusId);
+        } else {
+          handlePauseAll();
+        }
+      },
+      onSkip: () => {
+        if (focusId && focusedInterval) {
+          handleSkipIntervalPhase(focusId);
+        } else if (focusId && focusedStopwatch) {
+          handleAddLap(focusId);
+        } else {
+          const runInv = intervals.find((i) => i.isRunning);
+          if (runInv) handleSkipIntervalPhase(runInv.id);
+          const runSw = stopwatches.find((s) => s.isRunning);
+          if (runSw) handleAddLap(runSw.id);
+        }
+      },
+      onReset: () => {
+        if (focusId) {
+          if (focusedStopwatch) handleResetStopwatch(focusId);
+          else if (focusedTimer) handleResetTimer(focusId);
+          else if (focusedInterval) handleResetInterval(focusId);
+        } else {
+          handleResetAll();
+        }
+      },
+    });
+  }, [
+    focusId,
+    focusedStopwatch,
+    focusedTimer,
+    focusedInterval,
+    intervals,
+    stopwatches,
+    handleStartStopwatch,
+    handlePauseStopwatch,
+    handleResetStopwatch,
+    handleStartTimer,
+    handlePauseTimer,
+    handleResetTimer,
+    handleStartInterval,
+    handlePauseInterval,
+    handleResetInterval,
+    handleSkipIntervalPhase,
+    handleAddLap,
+    handleStartAll,
+    handlePauseAll,
+    handleResetAll,
+  ]);
+
+  // Synchronize Lock Screen & Notification Shade
+  useEffect(() => {
+    const anyRunning = runningStopwatchCount > 0 || runningTimerCount > 0 || runningIntervalCount > 0;
+
+    let primarySummary: ActiveItemSummary | null = null;
+
+    if (focusId) {
+      if (focusedInterval) {
+        const { remainingPhaseMs } = getIntervalState(focusedInterval, now);
+        const t = formatTime(remainingPhaseMs);
+        const curPhase = focusedInterval.phases[focusedInterval.currentPhaseIndex] || focusedInterval.phases[0];
+        primarySummary = {
+          id: focusedInterval.id,
+          name: focusedInterval.name,
+          type: 'interval',
+          formattedTime: `${t.minutes}:${t.seconds}`,
+          isRunning: focusedInterval.isRunning,
+          isCompleted: focusedInterval.isCompleted,
+          phaseName: curPhase?.name,
+          currentRound: focusedInterval.currentRound,
+          totalRounds: focusedInterval.totalRounds,
+        };
+      } else if (focusedTimer) {
+        const rem = getTimerRemaining(focusedTimer, now);
+        const t = formatTime(rem);
+        primarySummary = {
+          id: focusedTimer.id,
+          name: focusedTimer.name,
+          type: 'timer',
+          formattedTime: `${t.minutes}:${t.seconds}`,
+          isRunning: focusedTimer.isRunning,
+          isCompleted: focusedTimer.isCompleted,
+        };
+      } else if (focusedStopwatch) {
+        const el = getStopwatchElapsed(focusedStopwatch, now);
+        const t = formatTime(el);
+        primarySummary = {
+          id: focusedStopwatch.id,
+          name: focusedStopwatch.name,
+          type: 'stopwatch',
+          formattedTime: `${t.minutes}:${t.seconds}`,
+          isRunning: focusedStopwatch.isRunning,
+        };
+      }
+    }
+
+    if (!primarySummary) {
+      const runningInv = intervals.find((i) => i.isRunning);
+      if (runningInv) {
+        const { remainingPhaseMs } = getIntervalState(runningInv, now);
+        const t = formatTime(remainingPhaseMs);
+        const curPhase = runningInv.phases[runningInv.currentPhaseIndex] || runningInv.phases[0];
+        primarySummary = {
+          id: runningInv.id,
+          name: runningInv.name,
+          type: 'interval',
+          formattedTime: `${t.minutes}:${t.seconds}`,
+          isRunning: true,
+          phaseName: curPhase?.name,
+          currentRound: runningInv.currentRound,
+          totalRounds: runningInv.totalRounds,
+        };
+      } else {
+        const runningTim = timers.find((t) => t.isRunning);
+        if (runningTim) {
+          const rem = getTimerRemaining(runningTim, now);
+          const t = formatTime(rem);
+          primarySummary = {
+            id: runningTim.id,
+            name: runningTim.name,
+            type: 'timer',
+            formattedTime: `${t.minutes}:${t.seconds}`,
+            isRunning: true,
+          };
+        } else {
+          const runningSw = stopwatches.find((s) => s.isRunning);
+          if (runningSw) {
+            const el = getStopwatchElapsed(runningSw, now);
+            const t = formatTime(el);
+            primarySummary = {
+              id: runningSw.id,
+              name: runningSw.name,
+              type: 'stopwatch',
+              formattedTime: `${t.minutes}:${t.seconds}`,
+              isRunning: true,
+            };
+          }
+        }
+      }
+    }
+
+    backgroundNotificationService.update(primarySummary, anyRunning);
+  }, [
+    now,
+    focusId,
+    focusedStopwatch,
+    focusedTimer,
+    focusedInterval,
+    runningStopwatchCount,
+    runningTimerCount,
+    runningIntervalCount,
+    stopwatches,
+    timers,
+    intervals,
+  ]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 transition-colors flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
