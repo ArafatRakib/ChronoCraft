@@ -28,7 +28,6 @@ class SoundEngine {
 
     switch (preset) {
       case 'chime': {
-        // High harmonic chime
         const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
         notes.forEach((freq, idx) => {
           const osc = ctx.createOscillator();
@@ -51,7 +50,6 @@ class SoundEngine {
       }
 
       case 'digital': {
-        // Classic digital alarm beep beep beep
         const freqs = [880, 880, 880];
         freqs.forEach((freq, idx) => {
           const osc = ctx.createOscillator();
@@ -74,7 +72,6 @@ class SoundEngine {
       }
 
       case 'bell': {
-        // Resonant bell chime
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
@@ -94,7 +91,6 @@ class SoundEngine {
       }
 
       case 'marimba': {
-        // Warm marimba 4-note motif
         const freqs = [440, 554.37, 659.25, 880]; // A4, C#5, E5, A5
         freqs.forEach((freq, idx) => {
           const osc = ctx.createOscillator();
@@ -116,7 +112,6 @@ class SoundEngine {
       }
 
       case 'gentle': {
-        // Calming major chord fade
         const chord = [329.63, 415.3, 493.88, 659.25]; // E4, G#4, B4, E5
         chord.forEach((freq) => {
           const osc = ctx.createOscillator();
@@ -141,18 +136,89 @@ class SoundEngine {
   }
 
   /**
-   * Start an alarm for a timer with optional repeating/looping
-   * repeatCount: 1 (play once), 3 (repeat 3x), 5 (repeat 5x), 0 (continuous loop until dismissed)
+   * Short 3-2-1 countdown pip
    */
+  public playCountdownPip(highOrSec: boolean | number = false) {
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    const isHigh = highOrSec === true || highOrSec === 1;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(isHigh ? 1318.5 : 880, now); // E6 vs A5
+
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + (isHigh ? 0.4 : 0.12));
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + (isHigh ? 0.45 : 0.15));
+  }
+
+  /**
+   * Interval phase transition fanfare (Work start / Rest start)
+   */
+  public playPhaseTransition(isWork: boolean) {
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const freqs = isWork ? [587.33, 880, 1174.66] : [783.99, 587.33]; // Rising vs Soothing Falling
+    freqs.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+
+      gain.gain.setValueAtTime(0.25, now + idx * 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.35);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now + idx * 0.1);
+      osc.stop(now + idx * 0.1 + 0.4);
+    });
+  }
+
+  /**
+   * Stopwatch Target Reached celebratory chime
+   */
+  public playTargetReached() {
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5]; // C5 to E6 major pentatonic
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+
+      gain.gain.setValueAtTime(0.25, now + idx * 0.09);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.5);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now + idx * 0.09);
+      osc.stop(now + idx * 0.09 + 0.55);
+    });
+  }
+
   public startAlarm(timerId: string, preset: SoundPreset = 'chime', repeatCount: number = 3) {
     this.stopAlarm(timerId);
-
-    // Play first iteration immediately
     this.playAlert(preset);
 
-    if (repeatCount === 1) {
-      return;
-    }
+    if (repeatCount === 1) return;
 
     let repeatsRemaining = repeatCount === 0 ? Infinity : repeatCount - 1;
 
@@ -173,9 +239,6 @@ class SoundEngine {
     });
   }
 
-  /**
-   * Stops repeating/continuous alarm for a specific timer (or all active alarms if timerId is omitted)
-   */
   public stopAlarm(timerId?: string) {
     if (timerId) {
       const active = this.activeAlarms.get(timerId);
@@ -189,7 +252,6 @@ class SoundEngine {
     }
   }
 
-  // Quick unlock method triggered on first click anywhere
   public unlock() {
     this.getAudioContext();
   }

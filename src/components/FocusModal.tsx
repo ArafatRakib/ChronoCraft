@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StopwatchItem, TimerItem } from '../types';
+import { StopwatchItem, TimerItem, IntervalTimerItem } from '../types';
 import { getColorTheme } from '../constants/colors';
 import { formatTime } from '../utils/timeFormatter';
 import { 
@@ -10,12 +10,15 @@ import {
   Flag, 
   Clock, 
   BellRing, 
-  Plus,
-  Copy,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Layers
+  Plus, 
+  Copy, 
+  Check, 
+  ChevronDown, 
+  ChevronUp, 
+  Layers,
+  Flame,
+  Dumbbell,
+  SkipForward
 } from 'lucide-react';
 
 interface FocusModalProps {
@@ -23,11 +26,15 @@ interface FocusModalProps {
   onClose: () => void;
   stopwatch?: StopwatchItem;
   timer?: TimerItem;
+  interval?: IntervalTimerItem;
   elapsedMs?: number;
   remainingMs?: number;
+  remainingPhaseMs?: number;
+  now?: number;
   onStart: (id: string) => void;
   onPause: (id: string) => void;
   onReset: (id: string) => void;
+  onSkipPhase?: (id: string) => void;
   onAddLap?: (id: string) => void;
   onAddExtraTime?: (id: string, ms: number) => void;
 }
@@ -37,20 +44,45 @@ export const FocusModal: React.FC<FocusModalProps> = ({
   onClose,
   stopwatch,
   timer,
+  interval,
   elapsedMs = 0,
   remainingMs = 0,
+  remainingPhaseMs = 0,
+  now,
   onStart,
   onPause,
   onReset,
+  onSkipPhase,
   onAddLap,
   onAddExtraTime,
 }) => {
-  const item = stopwatch || timer;
+  const item = stopwatch || timer || interval;
   const isStopwatch = Boolean(stopwatch);
+  const isTimer = Boolean(timer);
+  const isInterval = Boolean(interval);
+
   const [showLapsSheet, setShowLapsSheet] = useState(false);
   const [copiedLaps, setCopiedLaps] = useState(false);
 
-  // Fastest & slowest lap calculation
+  // Interval state calculations
+  const currentPhase = interval && interval.phases && interval.phases.length > 0
+    ? (interval.phases[interval.currentPhaseIndex] || interval.phases[0])
+    : null;
+
+  const currentRound = interval ? (interval.currentRound || 1) : 1;
+  const totalRounds = interval ? (interval.totalRounds || 8) : 8;
+
+  const currentPhaseDuration = currentPhase && typeof currentPhase.durationMs === 'number' && !isNaN(currentPhase.durationMs)
+    ? currentPhase.durationMs
+    : 30000;
+
+  const safeIntervalRemaining = typeof remainingPhaseMs === 'number' && !isNaN(remainingPhaseMs)
+    ? remainingPhaseMs
+    : interval?.isRunning && interval.startedAt
+      ? Math.max(0, (typeof interval.phaseRemainingMs === 'number' && !isNaN(interval.phaseRemainingMs) ? interval.phaseRemainingMs : currentPhaseDuration) - ((now || Date.now()) - interval.startedAt))
+      : (interval && typeof interval.phaseRemainingMs === 'number' && !isNaN(interval.phaseRemainingMs) ? interval.phaseRemainingMs : currentPhaseDuration);
+
+  // Fastest & slowest lap calculation for stopwatch
   let fastestLapId: string | null = null;
   let slowestLapId: string | null = null;
   if (stopwatch?.laps && stopwatch.laps.length > 1) {
@@ -96,6 +128,8 @@ export const FocusModal: React.FC<FocusModalProps> = ({
         }
       } else if (e.code === 'KeyR') {
         onReset(item.id);
+      } else if (e.code === 'KeyS' && isInterval && onSkipPhase) {
+        onSkipPhase(item.id);
       } else if (e.code === 'KeyL' && isStopwatch && onAddLap) {
         if (stopwatch?.isRunning) {
           onAddLap(stopwatch.id);
@@ -113,16 +147,38 @@ export const FocusModal: React.FC<FocusModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, item, isStopwatch, stopwatch, showLapsSheet, onStart, onPause, onReset, onAddLap, onClose]);
+  }, [isOpen, item, isStopwatch, isInterval, stopwatch, showLapsSheet, onStart, onPause, onReset, onSkipPhase, onAddLap, onClose]);
 
   if (!isOpen || !item) return null;
 
-  const theme = getColorTheme(item.color);
-  const displayMs = isStopwatch ? elapsedMs : remainingMs;
+  // Active theme calculation
+  const phaseColor = isInterval ? (currentPhase?.color || interval?.color || 'rose') : item.color;
+  const theme = getColorTheme(phaseColor);
+
+  let displayMs = 0;
+  if (isStopwatch) {
+    displayMs = elapsedMs;
+  } else if (isTimer) {
+    displayMs = remainingMs;
+  } else if (isInterval) {
+    displayMs = safeIntervalRemaining;
+  }
+
   const time = formatTime(displayMs);
 
-  const progressRatio = timer && timer.duration > 0 ? Math.max(0, Math.min(1, remainingMs / timer.duration)) : 0;
+  // Progress ratio calculation
+  let progressRatio = 0;
+  if (isTimer && timer && timer.duration > 0) {
+    progressRatio = Math.max(0, Math.min(1, remainingMs / timer.duration));
+  } else if (isInterval && currentPhaseDuration > 0) {
+    progressRatio = Math.max(0, Math.min(1, safeIntervalRemaining / currentPhaseDuration));
+  }
   const strokeDashoffset = 283 * (1 - progressRatio);
+
+  const nextPhaseIndex = interval?.phases && interval.phases.length > 0
+    ? (interval.currentPhaseIndex + 1) % interval.phases.length
+    : 0;
+  const nextPhase = interval?.phases && interval.phases.length > 1 ? interval.phases[nextPhaseIndex] : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-8 bg-slate-950/95 backdrop-blur-md animate-fade-in text-white select-none">
@@ -134,7 +190,7 @@ export const FocusModal: React.FC<FocusModalProps> = ({
             <div className="min-w-0">
               <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-white truncate max-w-[200px] sm:max-w-md">{item.name}</h1>
               <span className="text-xs text-slate-400 font-medium capitalize block">
-                {isStopwatch ? 'Stopwatch Focus Mode' : 'Timer Focus Mode'}
+                {isStopwatch ? 'Stopwatch Focus Mode' : isInterval ? 'HIIT Interval Focus Mode' : 'Timer Focus Mode'}
               </span>
             </div>
           </div>
@@ -167,7 +223,7 @@ export const FocusModal: React.FC<FocusModalProps> = ({
 
         {/* Big Giant Display Center */}
         <div className="my-auto flex flex-col items-center justify-center w-full py-2">
-          {!isStopwatch && timer?.isCompleted ? (
+          {isTimer && timer?.isCompleted ? (
             <div className="flex flex-col items-center space-y-4 text-center">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-2xl animate-bounce">
                 <BellRing className="w-10 h-10 sm:w-12 sm:h-12" />
@@ -184,9 +240,27 @@ export const FocusModal: React.FC<FocusModalProps> = ({
                 </button>
               </div>
             </div>
+          ) : isInterval && interval?.isCompleted ? (
+            <div className="flex flex-col items-center space-y-4 text-center">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-2xl animate-bounce">
+                <Flame className="w-10 h-10 sm:w-12 sm:h-12" />
+              </div>
+              <h2 className="text-3xl sm:text-6xl font-black text-emerald-400">Workout Complete!</h2>
+              <p className="text-base sm:text-lg text-slate-300">Great job! All {interval.totalRounds} rounds completed.</p>
+              <div className="pt-2">
+                <button
+                  onClick={() => onReset(interval.id)}
+                  className="py-3 px-8 rounded-2xl bg-white text-slate-900 font-bold text-base shadow-xl flex items-center gap-2 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                  <span>Restart Workout</span>
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="relative flex flex-col items-center justify-center">
-              {!isStopwatch && (
+              {/* Circular Ring for Timer & Interval */}
+              {(isTimer || isInterval) && (
                 <svg className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 -rotate-90 mb-2" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="45" className="stroke-white/10 fill-none" strokeWidth="4" />
                   <circle
@@ -203,7 +277,28 @@ export const FocusModal: React.FC<FocusModalProps> = ({
                 </svg>
               )}
 
-              <div className={`${!isStopwatch ? 'absolute inset-0 flex flex-col items-center justify-center' : ''}`}>
+              <div className={`${isTimer || isInterval ? 'absolute inset-0 flex flex-col items-center justify-center' : ''}`}>
+                {/* Interval Phase Badge */}
+                {isInterval && currentPhase && (
+                  <div className="mb-2 sm:mb-4 flex items-center gap-2">
+                    <span 
+                      className="px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md"
+                      style={{ backgroundColor: theme.accentHex, color: '#fff' }}
+                    >
+                      {currentPhase.type === 'work' ? (
+                        <Flame className="w-4 h-4" />
+                      ) : (
+                        <Dumbbell className="w-4 h-4" />
+                      )}
+                      <span>{currentPhase.name}</span>
+                    </span>
+                    <span className="text-xs sm:text-sm font-semibold text-slate-300 bg-white/10 px-3 py-1 rounded-full">
+                      Round {currentRound} of {totalRounds}
+                    </span>
+                  </div>
+                )}
+
+                {/* Big Digits */}
                 <div className="inline-flex items-baseline font-mono tracking-tighter font-extrabold text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-white">
                   {parseInt(time.hours, 10) > 0 && (
                     <>
@@ -221,9 +316,15 @@ export const FocusModal: React.FC<FocusModalProps> = ({
                   )}
                 </div>
 
+                {/* Status or Next Phase info */}
                 <div className="text-xs sm:text-sm font-medium text-slate-400 mt-2 sm:mt-4 tracking-widest uppercase flex items-center justify-center gap-2">
                   <span className={`w-2.5 h-2.5 rounded-full ${item.isRunning ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
                   <span>{item.isRunning ? 'Active' : 'Paused'}</span>
+                  {isInterval && nextPhase && (
+                    <span className="normal-case text-slate-400 font-sans ml-2">
+                      (Next: {nextPhase.name})
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -247,7 +348,7 @@ export const FocusModal: React.FC<FocusModalProps> = ({
         </div>
 
         {/* Quick Add time for Timer */}
-        {!isStopwatch && timer && !timer.isCompleted && onAddExtraTime && (
+        {isTimer && timer && !timer.isCompleted && onAddExtraTime && (
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xs text-slate-400">Quick Add:</span>
             <button
@@ -286,6 +387,12 @@ export const FocusModal: React.FC<FocusModalProps> = ({
                 <span>[V] View Laps</span>
               </>
             )}
+            {isInterval && (
+              <>
+                <span>•</span>
+                <span>[S] Skip Phase</span>
+              </>
+            )}
             <span>•</span>
             <span>[Esc] Exit</span>
           </div>
@@ -300,6 +407,17 @@ export const FocusModal: React.FC<FocusModalProps> = ({
               >
                 <Flag className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Lap</span>
+              </button>
+            )}
+
+            {isInterval && onSkipPhase && (
+              <button
+                onClick={() => onSkipPhase(item.id)}
+                className="flex-1 sm:flex-none py-3 px-4 sm:px-5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                title="Skip Current Phase"
+              >
+                <SkipForward className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span>Skip</span>
               </button>
             )}
 
@@ -438,4 +556,3 @@ export const FocusModal: React.FC<FocusModalProps> = ({
     </div>
   );
 };
-

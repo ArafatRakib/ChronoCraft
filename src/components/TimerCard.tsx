@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { TimerItem, ColorName, SoundPreset } from '../types';
 import { getColorTheme } from '../constants/colors';
 import { formatTime } from '../utils/timeFormatter';
+import { capitalizeWords } from '../utils/textFormatters';
 import { ColorPicker } from './ColorPicker';
 import { soundEngine } from '../utils/audio';
 import { 
@@ -16,13 +17,17 @@ import {
   Plus, 
   BellRing, 
   Volume2, 
-  RefreshCw,
-  MoreVertical
+  VolumeX,
+  RefreshCw, 
+  MoreVertical,
+  BookmarkPlus,
+  Flame
 } from 'lucide-react';
 
 interface TimerCardProps {
   timer: TimerItem;
   remainingMs: number;
+  overtimeMs?: number;
   onStart: (id: string) => void;
   onPause: (id: string) => void;
   onReset: (id: string) => void;
@@ -31,6 +36,9 @@ interface TimerCardProps {
   onUpdateColor: (id: string, color: ColorName) => void;
   onUpdateSound: (id: string, sound: SoundPreset) => void;
   onUpdateRepeat?: (id: string, repeat: number) => void;
+  onToggleOvertime?: (id: string) => void;
+  onToggleVoice?: (id: string) => void;
+  onSaveAsPreset?: (name: string, durationMs: number, color: ColorName) => void;
   onDelete: (id: string) => void;
   onOpenFocus: (id: string) => void;
   isCompact?: boolean;
@@ -47,6 +55,7 @@ const SOUND_PRESETS: { id: SoundPreset; name: string }[] = [
 export const TimerCard: React.FC<TimerCardProps> = ({
   timer,
   remainingMs,
+  overtimeMs = 0,
   onStart,
   onPause,
   onReset,
@@ -55,6 +64,9 @@ export const TimerCard: React.FC<TimerCardProps> = ({
   onUpdateColor,
   onUpdateSound,
   onUpdateRepeat,
+  onToggleOvertime,
+  onToggleVoice,
+  onSaveAsPreset,
   onDelete,
   onOpenFocus,
   isCompact = false,
@@ -68,7 +80,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const lastTapRef = useRef<number>(0);
 
-  // Smart popover position clamping so menus never clip outside screen boundaries
+  // Smart popover position clamping
   useEffect(() => {
     if ((showMenu || showColorPicker || showSoundPicker) && menuRef.current) {
       const rect = menuRef.current.getBoundingClientRect();
@@ -76,7 +88,6 @@ export const TimerCard: React.FC<TimerCardProps> = ({
       const leftEdge = rect.right - popoverWidth;
 
       if (leftEdge < 12) {
-        // Leaning too far left offscreen: shift rightward
         const shiftRight = 12 - leftEdge;
         setMenuStyle({ right: `-${shiftRight}px`, left: 'auto' });
       } else {
@@ -98,7 +109,6 @@ export const TimerCard: React.FC<TimerCardProps> = ({
   }, []);
 
   const handleDoubleClick = (e: React.MouseEvent) => {
-    // Only open focus mode if double clicking the card body, not buttons or inputs
     const target = e.target as HTMLElement;
     if (
       target.closest('button') || 
@@ -129,11 +139,14 @@ export const TimerCard: React.FC<TimerCardProps> = ({
   };
 
   const theme = getColorTheme(timer.color);
-  const time = formatTime(remainingMs);
+  const isOvertime = timer.isCompleted && (timer.overtimeEnabled !== false);
+  const displayMs = isOvertime ? overtimeMs : remainingMs;
+  const time = formatTime(displayMs);
 
   const handleSaveName = () => {
-    if (nameInput.trim()) {
-      onUpdateName(timer.id, nameInput.trim());
+    const formatted = capitalizeWords(nameInput);
+    if (formatted) {
+      onUpdateName(timer.id, formatted);
     } else {
       setNameInput(timer.name);
     }
@@ -148,9 +161,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
   const progressRatio = timer.duration > 0 ? Math.max(0, Math.min(1, remainingMs / timer.duration)) : 0;
   const strokeDashoffset = 283 * (1 - progressRatio);
 
-  // ==========================================
-  // COMPACT / LIST ROW VIEW
-  // ==========================================
+  // Compact row
   if (isCompact) {
     return (
       <div 
@@ -158,7 +169,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
         onTouchEnd={handleTouchEnd}
         className={`relative rounded-xl transition-all border-l-4 border-y border-r ${
           timer.isCompleted
-            ? 'border-rose-400 dark:border-rose-600 bg-rose-50/90 dark:bg-rose-950/40 animate-pulse'
+            ? 'border-rose-500 bg-rose-50/90 dark:bg-rose-950/40'
             : `${theme.border} bg-white dark:bg-slate-900/90`
         } shadow-sm hover:shadow-md p-3 flex items-center justify-between gap-3 select-none ${
           timer.isRunning ? `ring-2 ring-offset-1 dark:ring-offset-slate-950 ${theme.glow}` : ''
@@ -167,7 +178,6 @@ export const TimerCard: React.FC<TimerCardProps> = ({
           borderLeftColor: timer.isCompleted ? '#f43f5e' : theme.accentHex,
         }}
       >
-        {/* Left: Info & Name */}
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <button
             type="button"
@@ -176,49 +186,32 @@ export const TimerCard: React.FC<TimerCardProps> = ({
               setShowMenu(false);
             }}
             className="w-3.5 h-3.5 rounded-full ring-2 ring-white dark:ring-slate-800 shadow-sm transition-transform active:scale-90 hover:scale-110 cursor-pointer shrink-0"
-            style={{ backgroundColor: theme.accentHex }}
+            style={{ backgroundColor: timer.isCompleted ? '#f43f5e' : theme.accentHex }}
             title="Change Color"
           />
 
           <div className="min-w-0 flex-1">
-            {isEditingName ? (
-              <div className="flex items-center gap-1">
-                <input
-                  type="text"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  onBlur={handleSaveName}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
-                  autoFocus
-                  className="w-full text-xs font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none"
-                />
-                <button onClick={handleSaveName} className="p-0.5 text-emerald-600">
-                  <Check className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <h3 
-                onClick={() => setIsEditingName(true)}
-                className="font-bold text-slate-800 dark:text-slate-100 truncate text-xs sm:text-sm cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400"
-                title={`${timer.name} (Click to rename)`}
-              >
-                {timer.name}
-              </h3>
-            )}
+            <h3 
+              onClick={() => setIsEditingName(true)}
+              className="font-bold text-slate-800 dark:text-slate-100 truncate text-xs sm:text-sm cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400"
+            >
+              {timer.name}
+            </h3>
             <div className="flex items-center gap-1 text-[10px] text-slate-400">
               <span className={`w-1.5 h-1.5 rounded-full ${timer.isCompleted ? 'bg-rose-500 animate-bounce' : timer.isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} />
-              <span>{timer.isCompleted ? "Time's Up!" : timer.isRunning ? 'Running' : remainingMs < timer.duration ? 'Paused' : 'Ready'}</span>
+              <span className={timer.isCompleted ? 'font-bold text-rose-500' : ''}>
+                {isOvertime ? `Overtime +${time.minutes}:${time.seconds}` : timer.isCompleted ? "Time's Up!" : timer.isRunning ? 'Running' : remainingMs < timer.duration ? 'Paused' : 'Ready'}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Center: Time Readout */}
-        <div className="font-mono font-bold text-base sm:text-xl text-slate-800 dark:text-slate-100 tabular-nums shrink-0">
+        <div className={`font-mono font-bold text-base sm:text-xl tabular-nums shrink-0 ${timer.isCompleted ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-slate-100'}`}>
+          {isOvertime && '+'}
           {parseInt(time.hours, 10) > 0 && `${time.hours}:`}
           {time.minutes}:{time.seconds}
         </div>
 
-        {/* Right: Quick Action Controls */}
         <div className="flex items-center gap-1.5 shrink-0">
           {timer.isCompleted ? (
             <button
@@ -278,7 +271,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
             {showMenu && (
               <div 
                 style={menuStyle}
-                className="absolute top-full mt-1 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-44 text-xs font-medium space-y-0.5 no-focus-trigger"
+                className="absolute top-full mt-1 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-48 text-xs font-medium space-y-0.5 no-focus-trigger"
               >
                 <button
                   onClick={() => {
@@ -303,26 +296,6 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 <button
                   onClick={() => {
                     setShowMenu(false);
-                    setShowColorPicker(true);
-                  }}
-                  className="w-full px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer"
-                >
-                  <Palette className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Color Theme</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    setShowSoundPicker(true);
-                  }}
-                  className="w-full px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer"
-                >
-                  <Volume2 className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Alarm Sound</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
                     onDelete(timer.id);
                   }}
                   className="w-full px-2.5 py-1.5 text-left rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer"
@@ -332,71 +305,20 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 </button>
               </div>
             )}
-
-            {showColorPicker && (
-              <div 
-                style={menuStyle}
-                className="absolute top-full mt-1 p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-60 no-focus-trigger"
-              >
-                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
-                  Choose Color
-                </div>
-                <ColorPicker
-                  selectedColor={timer.color}
-                  onSelectColor={(color) => {
-                    onUpdateColor(timer.id, color);
-                    setShowColorPicker(false);
-                  }}
-                />
-              </div>
-            )}
-
-            {showSoundPicker && (
-              <div 
-                style={menuStyle}
-                className="absolute top-full mt-1 p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-64 no-focus-trigger"
-              >
-                <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">
-                  Alarm Sound
-                </div>
-                <div className="space-y-1">
-                  {SOUND_PRESETS.map((snd) => (
-                    <button
-                      key={snd.id}
-                      onClick={() => {
-                        onUpdateSound(timer.id, snd.id);
-                        handlePreviewSound(snd.id);
-                        setShowSoundPicker(false);
-                      }}
-                      className={`w-full px-2.5 py-1.5 text-xs text-left rounded-lg flex items-center justify-between ${
-                        timer.soundAlert === snd.id
-                          ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold'
-                          : 'hover:bg-slate-100 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200'
-                      }`}
-                    >
-                      <span>{snd.name}</span>
-                      {timer.soundAlert === snd.id && <Check className="w-3.5 h-3.5" />}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
     );
   }
 
-  // ==========================================
-  // STANDARD GRID CARD VIEW
-  // ==========================================
+  // Standard Grid Card
   return (
     <div 
       onDoubleClick={handleDoubleClick}
       onTouchEnd={handleTouchEnd}
       className={`relative rounded-xl sm:rounded-2xl transition-all duration-300 border-t-4 border-x border-b ${
         timer.isCompleted 
-          ? 'border-rose-400 dark:border-rose-600 bg-rose-50/90 dark:bg-rose-950/40 animate-pulse' 
+          ? 'border-rose-500 bg-rose-50/70 dark:bg-rose-950/30 ring-2 ring-rose-500/50' 
           : `${theme.border} bg-white dark:bg-slate-900/90`
       } shadow-sm hover:shadow-md overflow-visible flex flex-col justify-between select-none ${
         timer.isRunning ? `ring-2 ring-offset-2 dark:ring-offset-slate-950 ${theme.glow}` : ''
@@ -408,7 +330,6 @@ export const TimerCard: React.FC<TimerCardProps> = ({
     >
       {/* Top Header Bar */}
       <div className={`px-3 py-2 sm:px-4 sm:py-2.5 border-b ${theme.border} rounded-t-lg sm:rounded-t-xl flex items-center justify-between bg-slate-50/60 dark:bg-slate-800/40 gap-2`}>
-        {/* Left: Color dot + Title */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
             type="button"
@@ -418,7 +339,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
               setShowSoundPicker(false);
             }}
             className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full ring-2 ring-white dark:ring-slate-800 shadow-sm transition-transform active:scale-90 hover:scale-110 cursor-pointer shrink-0"
-            style={{ backgroundColor: theme.accentHex }}
+            style={{ backgroundColor: timer.isCompleted ? '#f43f5e' : theme.accentHex }}
             title="Change Color Theme"
           />
 
@@ -431,7 +352,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 onBlur={handleSaveName}
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
                 autoFocus
-                className="w-full text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                className="w-full text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none"
               />
               <button 
                 onClick={handleSaveName}
@@ -451,7 +372,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
           )}
         </div>
 
-        {/* Right: Single 3-dots Menu Button */}
+        {/* 3-dots Menu Button */}
         <div className="relative shrink-0" ref={menuRef}>
           <button
             type="button"
@@ -466,11 +387,10 @@ export const TimerCard: React.FC<TimerCardProps> = ({
             <MoreVertical className="w-4 h-4" />
           </button>
 
-          {/* More Options Dropdown */}
           {showMenu && (
             <div 
               style={menuStyle}
-              className="absolute top-full mt-1.5 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-48 sm:w-52 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 space-y-0.5 text-xs font-medium no-focus-trigger"
+              className="absolute top-full mt-1.5 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 w-52 max-w-[calc(100vw-24px)] animate-in fade-in zoom-in-95 space-y-0.5 text-xs font-medium no-focus-trigger"
             >
               <button
                 onClick={() => {
@@ -482,6 +402,59 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 <Maximize2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span>Focus Mode</span>
               </button>
+
+              {onSaveAsPreset && (
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onSaveAsPreset(timer.name, timer.duration, timer.color);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <BookmarkPlus className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span>Save as Preset</span>
+                </button>
+              )}
+
+              {onToggleOvertime && (
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onToggleOvertime(timer.id);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Flame className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                    <span>Overtime Count</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    {timer.overtimeEnabled !== false ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+              )}
+
+              {onToggleVoice && (
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onToggleVoice(timer.id);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    {timer.voiceEnabled !== false ? (
+                      <Volume2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                    ) : (
+                      <VolumeX className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    )}
+                    <span>Voice Cues</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    {timer.voiceEnabled !== false ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+              )}
 
               <button
                 onClick={() => {
@@ -596,7 +569,6 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 })}
               </div>
 
-              {/* Repeat Count selector */}
               {onUpdateRepeat && (
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
                   <span className="text-[11px] font-medium">Alarm Repeat:</span>
@@ -625,19 +597,35 @@ export const TimerCard: React.FC<TimerCardProps> = ({
       {/* Main Countdown Display with Circular Ring */}
       <div className="p-3 sm:p-5 text-center flex-1 flex flex-col items-center justify-center relative min-h-[130px] sm:min-h-[180px]">
         {timer.isCompleted ? (
-          /* Finished State Banner */
+          /* Finished State / Overtime Banner */
           <div className="py-2 sm:py-3 flex flex-col items-center justify-center space-y-1 sm:space-y-2">
             <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-lg animate-bounce">
               <BellRing className="w-5 h-5 sm:w-7 sm:h-7" />
             </div>
-            <h4 className="text-sm sm:text-lg font-bold text-rose-700 dark:text-rose-300">Time's Up!</h4>
-            <p className="text-[10px] sm:text-xs text-rose-600 dark:text-rose-400 font-medium truncate max-w-[140px] sm:max-w-none">Finished: "{timer.name}"</p>
+            
+            {isOvertime ? (
+              <div className="text-center">
+                <span className="inline-block px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-bold text-[10px] uppercase tracking-wider mb-1">
+                  Overtime
+                </span>
+                <div className="font-mono font-black text-2xl sm:text-3xl text-rose-600 dark:text-rose-400 tabular-nums">
+                  +{time.minutes}:{time.seconds}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">Elapsed past target</p>
+              </div>
+            ) : (
+              <>
+                <h4 className="text-sm sm:text-lg font-bold text-rose-700 dark:text-rose-300">Time's Up!</h4>
+                <p className="text-[10px] sm:text-xs text-rose-600 dark:text-rose-400 font-medium truncate max-w-[140px] sm:max-w-none">
+                  Finished: "{timer.name}"
+                </p>
+              </>
+            )}
           </div>
         ) : (
           /* Circular Progress & Clock Display */
           <div className="relative flex items-center justify-center my-0.5">
             <svg className="w-28 h-28 xs:w-32 xs:h-32 sm:w-44 sm:h-44 -rotate-90" viewBox="0 0 100 100">
-              {/* Background Track Circle */}
               <circle
                 cx="50"
                 cy="50"
@@ -645,7 +633,6 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 className="stroke-slate-100 dark:stroke-slate-800 fill-none"
                 strokeWidth="6"
               />
-              {/* Animated Progress Ring */}
               <circle
                 cx="50"
                 cy="50"
@@ -659,7 +646,6 @@ export const TimerCard: React.FC<TimerCardProps> = ({
               />
             </svg>
 
-            {/* Inner Clock Readout */}
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
               <div className="inline-flex items-baseline font-mono tracking-tight font-bold select-none">
                 {parseInt(time.hours, 10) > 0 && (
@@ -673,7 +659,6 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 <span className="text-lg xs:text-2xl sm:text-3xl lg:text-4xl text-slate-800 dark:text-slate-100">{time.seconds}</span>
               </div>
 
-              {/* Status subtext */}
               <div className="text-[9px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
                 {timer.isRunning ? 'Running' : remainingMs < timer.duration ? 'Paused' : 'Ready'}
               </div>
@@ -682,7 +667,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
         )}
       </div>
 
-      {/* Control Buttons (2-Row Layout: Big Start/Dismiss + Secondary Actions) */}
+      {/* Control Buttons */}
       <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-1 space-y-1.5">
         {timer.isCompleted ? (
           <div className="grid grid-cols-2 gap-1.5">
@@ -707,7 +692,6 @@ export const TimerCard: React.FC<TimerCardProps> = ({
           </div>
         ) : (
           <>
-            {/* Row 1: Primary Full-Width Start / Pause Button */}
             <button
               onClick={() => (timer.isRunning ? onPause(timer.id) : onStart(timer.id))}
               className="w-full py-2 sm:py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 text-white shadow-sm transition-all active:scale-[0.98] hover:opacity-95 cursor-pointer"
@@ -726,7 +710,6 @@ export const TimerCard: React.FC<TimerCardProps> = ({
               )}
             </button>
 
-            {/* Row 2: Secondary Controls (Reset + Quick Time Adder) */}
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => onReset(timer.id)}
