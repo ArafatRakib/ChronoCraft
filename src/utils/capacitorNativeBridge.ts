@@ -128,6 +128,7 @@ class CapacitorNativeBridge {
 
     try {
       await this.initialize();
+      // Directly notify without AlarmManager schedule delay for instantaneous live updates
       await LocalNotifications.schedule({
         notifications: [
           {
@@ -137,7 +138,6 @@ class CapacitorNativeBridge {
             channelId: ACTIVE_TIMER_CHANNEL_ID,
             ongoing: true,
             autoCancel: false,
-            schedule: { at: new Date(Date.now() + 50) },
             actionTypeId: 'OPEN_APP',
             extra: {
               type: 'active_running_timer',

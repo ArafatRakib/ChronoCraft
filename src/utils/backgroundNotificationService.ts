@@ -275,7 +275,7 @@ class BackgroundNotificationService {
     // 4. Ongoing native Android & web system notification
     const now = Date.now();
     if (primaryItem && anyRunning) {
-      if (now - this.lastUpdateMs > 1500) {
+      if (now - this.lastUpdateMs >= 1000 || this.lastUpdateMs === 0) {
         this.lastUpdateMs = now;
         const title = `${primaryItem.name}: ${primaryItem.formattedTime}`;
         const body =
@@ -297,6 +297,7 @@ class BackgroundNotificationService {
         }
       }
     } else {
+      this.lastUpdateMs = 0;
       if (capacitorBridge.isNative()) {
         capacitorBridge.clearRunningNotification();
       }

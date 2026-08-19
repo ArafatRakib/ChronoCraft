@@ -27,6 +27,8 @@ import {
   saveWakeLockPreference,
   loadVoicePreference,
   saveVoicePreference,
+  loadGlobalSoundPreference,
+  saveGlobalSoundPreference,
   getStopwatchElapsed, 
   getTimerRemaining,
   getIntervalState
@@ -48,6 +50,7 @@ import { CreateModal } from './components/CreateModal';
 import { FocusModal } from './components/FocusModal';
 import { PresetsModal } from './components/PresetsModal';
 import { LapAnalyticsModal } from './components/LapAnalyticsModal';
+import { SettingsModal } from './components/SettingsModal';
 import { EmptyState } from './components/EmptyState';
 import { ColorFilterDropdown } from './components/ColorFilterDropdown';
 import { 
@@ -134,6 +137,7 @@ export default function App() {
   const [wakeLockPref, setWakeLockPref] = useState<boolean>(() => loadWakeLockPreference());
   const [wakeLockActive, setWakeLockActive] = useState<boolean>(false);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(() => loadVoicePreference());
+  const [globalSound, setGlobalSound] = useState<SoundPreset>(() => loadGlobalSoundPreference());
   const [activeTab, setActiveTab] = useState<ActiveTab>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedColorFilter, setSelectedColorFilter] = useState<string>('all');
@@ -144,6 +148,7 @@ export default function App() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createInitialType, setCreateInitialType] = useState<'stopwatch' | 'timer' | 'interval'>('timer');
   const [isPresetsOpen, setIsPresetsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [analyticsStopwatchId, setAnalyticsStopwatchId] = useState<string | null>(null);
 
@@ -1200,6 +1205,7 @@ export default function App() {
         isMuted={isMuted}
         onToggleMute={() => setIsMuted(!isMuted)}
         onOpenPresets={() => setIsPresetsOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         wakeLockActive={wakeLockActive}
         onToggleWakeLock={() => setWakeLockPref(!wakeLockPref)}
         voiceEnabled={voiceEnabled}
@@ -1553,9 +1559,30 @@ export default function App() {
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         initialType={createInitialType}
+        defaultSound={globalSound}
         onCreateStopwatch={handleCreateStopwatch}
         onCreateTimer={handleCreateTimer}
         onCreateInterval={handleCreateInterval}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        globalSound={globalSound}
+        onUpdateGlobalSound={(newSound, applyToExisting) => {
+          setGlobalSound(newSound);
+          saveGlobalSoundPreference(newSound);
+          if (applyToExisting) {
+            setTimers((prev) => prev.map((t) => ({ ...t, soundAlert: newSound })));
+            setIntervals((prev) => prev.map((inv) => ({ ...inv, soundAlert: newSound })));
+          }
+        }}
+        isMuted={isMuted}
+        onToggleMute={() => setIsMuted(!isMuted)}
+        voiceEnabled={voiceEnabled}
+        onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
+        wakeLockActive={wakeLockPref}
+        onToggleWakeLock={() => setWakeLockPref(!wakeLockPref)}
       />
 
       <PresetsModal

@@ -1,4 +1,4 @@
-import { StopwatchItem, TimerItem, IntervalTimerItem, TimerPreset, IntervalPhase } from '../types';
+import { StopwatchItem, TimerItem, IntervalTimerItem, TimerPreset, IntervalPhase, SoundPreset } from '../types';
 import { capitalizeWords } from './textFormatters';
 
 const STOPWATCHES_KEY = 'chrono_stopwatches_v1';
@@ -8,6 +8,25 @@ const CUSTOM_PRESETS_KEY = 'chrono_custom_presets_v1';
 const THEME_KEY = 'chrono_theme_v1';
 const WAKELOCK_PREF_KEY = 'chrono_wakelock_pref_v1';
 const VOICE_PREF_KEY = 'chrono_voice_pref_v1';
+const GLOBAL_SOUND_PREF_KEY = 'chrono_global_sound_v1';
+
+export function loadGlobalSoundPreference(): SoundPreset {
+  if (typeof window === 'undefined') return 'chime';
+  try {
+    const sound = localStorage.getItem(GLOBAL_SOUND_PREF_KEY);
+    if (sound === 'digital' || sound === 'chime' || sound === 'bell' || sound === 'marimba' || sound === 'gentle') {
+      return sound;
+    }
+  } catch {}
+  return 'chime';
+}
+
+export function saveGlobalSoundPreference(sound: SoundPreset) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(GLOBAL_SOUND_PREF_KEY, sound);
+  } catch {}
+}
 
 export function loadStopwatches(): StopwatchItem[] | null {
   if (typeof window === 'undefined') return null;

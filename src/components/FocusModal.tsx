@@ -18,7 +18,8 @@ import {
   Layers,
   Flame,
   Dumbbell,
-  SkipForward
+  SkipForward,
+  Target
 } from 'lucide-react';
 
 interface FocusModalProps {
@@ -167,12 +168,23 @@ export const FocusModal: React.FC<FocusModalProps> = ({
   const time = formatTime(displayMs);
   const timerDurationFormatted = isTimer && timer ? formatTime(timer.duration) : null;
 
+  // Stopwatch Target Goal state
+  const stopwatchTargetMs = stopwatch?.targetGoalMs || 0;
+  const hasStopwatchTarget = isStopwatch && stopwatchTargetMs > 0;
+  const isStopwatchTargetReached = hasStopwatchTarget && elapsedMs >= stopwatchTargetMs;
+  const targetFormatted = hasStopwatchTarget ? formatTime(stopwatchTargetMs) : null;
+  const targetPercent = hasStopwatchTarget
+    ? Math.min(100, Math.round((elapsedMs / stopwatchTargetMs) * 100))
+    : 0;
+
   // Progress ratio calculation
   let progressRatio = 0;
   if (isTimer && timer && timer.duration > 0) {
     progressRatio = Math.max(0, Math.min(1, remainingMs / timer.duration));
   } else if (isInterval && currentPhaseDuration > 0) {
     progressRatio = Math.max(0, Math.min(1, safeIntervalRemaining / currentPhaseDuration));
+  } else if (hasStopwatchTarget) {
+    progressRatio = Math.min(1, elapsedMs / stopwatchTargetMs);
   }
   const strokeDashoffset = 283 * (1 - progressRatio);
 
@@ -260,8 +272,8 @@ export const FocusModal: React.FC<FocusModalProps> = ({
             </div>
           ) : (
             <div className="relative flex flex-col items-center justify-center">
-              {/* Circular Ring for Timer & Interval */}
-              {(isTimer || isInterval) && (
+              {/* Circular Ring for Timer, Interval, or Stopwatch with Target Goal */}
+              {(isTimer || isInterval || hasStopwatchTarget) && (
                 <svg className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 -rotate-90 mb-2" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="45" className="stroke-slate-200 dark:stroke-white/10 fill-none" strokeWidth="4" />
                   <circle
@@ -273,12 +285,12 @@ export const FocusModal: React.FC<FocusModalProps> = ({
                     strokeDasharray="283"
                     strokeDashoffset={strokeDashoffset}
                     strokeLinecap="round"
-                    stroke={theme.accentHex}
+                    stroke={isStopwatchTargetReached ? '#10B981' : theme.accentHex}
                   />
                 </svg>
               )}
 
-              <div className={`${isTimer || isInterval ? 'absolute inset-0 flex flex-col items-center justify-center' : ''}`}>
+              <div className={`${isTimer || isInterval || hasStopwatchTarget ? 'absolute inset-0 flex flex-col items-center justify-center' : ''}`}>
                 {/* Interval Phase Badge */}
                 {isInterval && currentPhase && (
                   <div className="mb-2 sm:mb-4 flex items-center gap-2">
@@ -304,6 +316,27 @@ export const FocusModal: React.FC<FocusModalProps> = ({
                   <div className="mb-2 sm:mb-4 flex items-center justify-center gap-1.5 px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold tracking-wide shadow-sm text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-white/10 border border-slate-300/60 dark:border-white/15">
                     <Clock className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
                     <span>Set for {parseInt(timerDurationFormatted.hours, 10) > 0 && `${timerDurationFormatted.hours}:`}{timerDurationFormatted.minutes}:{timerDurationFormatted.seconds}</span>
+                  </div>
+                )}
+
+                {/* Stopwatch Target Goal Badge */}
+                {hasStopwatchTarget && targetFormatted && (
+                  <div className={`mb-2 sm:mb-4 flex items-center justify-center gap-2 px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold tracking-wide shadow-sm border ${
+                    isStopwatchTargetReached
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-400 dark:border-emerald-700'
+                      : 'text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-white/10 border-slate-300/60 dark:border-white/15'
+                  }`}>
+                    <Target className={`w-3.5 h-3.5 ${isStopwatchTargetReached ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-500 dark:text-indigo-400'}`} />
+                    <span>
+                      Target: {parseInt(targetFormatted.hours, 10) > 0 && `${targetFormatted.hours}:`}{targetFormatted.minutes}:{targetFormatted.seconds}
+                    </span>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
+                      isStopwatchTargetReached
+                        ? 'bg-emerald-600 text-white dark:bg-emerald-500'
+                        : 'bg-slate-300 dark:bg-white/15 text-slate-800 dark:text-slate-200'
+                    }`}>
+                      {isStopwatchTargetReached ? 'Goal Reached! 🎉' : `${targetPercent}%`}
+                    </span>
                   </div>
                 )}
 
