@@ -1,9 +1,54 @@
-import { Capacitor } from '@capacitor/core';
-import { LocalNotifications, Channel } from '@capacitor/local-notifications';
-import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 
 export const ALARM_CHANNEL_ID = 'chronocraft_alarm_channel';
 export const ACTIVE_TIMER_CHANNEL_ID = 'chronocraft_active_timer_channel';
+export const RUNNING_NOTIFICATION_ID = 888888;
+
+// Define typed interfaces for Capacitor Native Plugins
+export interface LocalNotificationSchema {
+  id: number;
+  title: string;
+  body: string;
+  schedule?: {
+    at?: Date;
+    allowWhileIdle?: boolean;
+  };
+  channelId?: string;
+  actionTypeId?: string;
+  ongoing?: boolean;
+  autoCancel?: boolean;
+  extra?: Record<string, any>;
+  sound?: string;
+}
+
+export interface ChannelSchema {
+  id: string;
+  name: string;
+  description?: string;
+  importance: number;
+  visibility?: number;
+  vibration?: boolean;
+  lights?: boolean;
+  lightColor?: string;
+  sound?: string;
+}
+
+interface LocalNotificationsPlugin {
+  createChannel(channel: ChannelSchema): Promise<void>;
+  requestPermissions(): Promise<{ display: string }>;
+  schedule(options: { notifications: LocalNotificationSchema[] }): Promise<void>;
+  cancel(options: { notifications: { id: number }[] }): Promise<void>;
+}
+
+interface HapticsPlugin {
+  impact(options: { style: 'HEAVY' | 'MEDIUM' | 'LIGHT' }): Promise<void>;
+  notification(options: { type: 'SUCCESS' | 'WARNING' | 'ERROR' }): Promise<void>;
+  vibrate(options?: { duration?: number }): Promise<void>;
+}
+
+// Safely register plugins via Capacitor core (avoids compile-time static bundle failures)
+const LocalNotifications = registerPlugin<LocalNotificationsPlugin>('LocalNotifications');
+const Haptics = registerPlugin<HapticsPlugin>('Haptics');
 
 class CapacitorNativeBridge {
   private isInitialized = false;
@@ -24,8 +69,8 @@ class CapacitorNativeBridge {
 
     try {
       if (this.isAndroid()) {
-        // 1. High priority Alarm Channel (Importance 5 = IMPORTANCE_HIGH/MAX, bypasses silent/DND mode, plays alarm sound)
-        const alarmChannel: Channel = {
+        // 1. High priority Alarm Channel (Importance 5 = IMPORTANCE_HIGH/MAX, bypasses silent/DND mode)
+        const alarmChannel: ChannelSchema = {
           id: ALARM_CHANNEL_ID,
           name: 'Timer & Workout Alarms',
           description: 'High-priority alert channel that plays alarm sound and vibrates on timer completion',
@@ -34,16 +79,16 @@ class CapacitorNativeBridge {
           vibration: true,
           lights: true,
           lightColor: '#EF4444',
-          sound: 'alarm.wav', // Native sound resource or default alarm
+          sound: 'alarm.wav',
         };
 
         // 2. Active Running Timer Channel (Persistent ongoing notification)
-        const activeChannel: Channel = {
+        const activeChannel: ChannelSchema = {
           id: ACTIVE_TIMER_CHANNEL_ID,
           name: 'Active Running Timers',
           description: 'Ongoing lock screen and notification shade display for running stopwatches and timers',
-          importance: 3, // IMPORTANCE_DEFAULT
-          visibility: 1,
+          importance: 4, // IMPORTANCE_HIGH so it shows on lockscreen and status bar
+          visibility: 1, // VISIBILITY_PUBLIC
           vibration: false,
           lights: false,
         };
@@ -71,6 +116,52 @@ class CapacitorNativeBridge {
     } catch (e) {
       console.warn('Native permission request note:', e);
       return false;
+    }
+  }
+
+  /**
+   * Updates an ongoing native Android notification for active running stopwatches, timers, or HIIT workouts.
+   * Keeps the live timer visible in the Android notification shade and lock screen.
+   */
+  public async updateRunningNotification(title: string, body: string): Promise<void> {
+    if (!this.isNative()) return;
+
+    try {
+      await this.initialize();
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: RUNNING_NOTIFICATION_ID,
+            title,
+            body,
+            channelId: ACTIVE_TIMER_CHANNEL_ID,
+            ongoing: true,
+            autoCancel: false,
+            schedule: { at: new Date(Date.now() + 50) },
+            actionTypeId: 'OPEN_APP',
+            extra: {
+              type: 'active_running_timer',
+            },
+          },
+        ],
+      });
+    } catch (e) {
+      console.warn('Native running notification note:', e);
+    }
+  }
+
+  /**
+   * Clears the ongoing running notification when all items are paused or reset
+   */
+  public async clearRunningNotification(): Promise<void> {
+    if (!this.isNative()) return;
+
+    try {
+      await LocalNotifications.cancel({
+        notifications: [{ id: RUNNING_NOTIFICATION_ID }],
+      });
+    } catch (e) {
+      console.warn('Native clear running notification note:', e);
     }
   }
 
@@ -159,19 +250,24 @@ class CapacitorNativeBridge {
    * Native device haptic feedback
    */
   public async triggerHaptic(style: 'light' | 'medium' | 'heavy' | 'alarm'): Promise<void> {
-    if (!this.isNative()) return;
+    if (!this.isNative()) {
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(style === 'alarm' ? [400, 200, 400, 200, 600] : 80);
+      }
+      return;
+    }
 
     try {
       if (style === 'alarm') {
-        await Haptics.notification({ type: NotificationType.Error });
+        await Haptics.notification({ type: 'ERROR' });
         setTimeout(() => Haptics.vibrate({ duration: 500 }), 200);
         setTimeout(() => Haptics.vibrate({ duration: 800 }), 800);
       } else if (style === 'heavy') {
-        await Haptics.impact({ style: ImpactStyle.Heavy });
+        await Haptics.impact({ style: 'HEAVY' });
       } else if (style === 'medium') {
-        await Haptics.impact({ style: ImpactStyle.Medium });
+        await Haptics.impact({ style: 'MEDIUM' });
       } else {
-        await Haptics.impact({ style: ImpactStyle.Light });
+        await Haptics.impact({ style: 'LIGHT' });
       }
     } catch {
       // Fallback to web vibration

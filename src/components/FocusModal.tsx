@@ -182,10 +182,10 @@ export const FocusModal: React.FC<FocusModalProps> = ({
   const nextPhase = interval?.phases && interval.phases.length > 1 ? interval.phases[nextPhaseIndex] : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-8 bg-slate-100/95 dark:bg-slate-950/95 backdrop-blur-md animate-fade-in text-slate-900 dark:text-white select-none transition-colors">
-      <div className="relative w-full max-w-4xl h-full max-h-[92vh] flex flex-col items-center justify-between p-4 sm:p-8 md:p-12 overflow-hidden bg-white/60 dark:bg-transparent rounded-3xl dark:rounded-none border border-slate-200/60 dark:border-transparent shadow-xl dark:shadow-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-8 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md animate-fade-in text-slate-900 dark:text-white select-none transition-colors">
+      <div className="relative w-full max-w-4xl h-full max-h-[92vh] flex flex-col items-center justify-between p-4 sm:p-8 md:p-12 overflow-hidden bg-white dark:bg-slate-950 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-2xl transition-colors">
         {/* Top Control Bar */}
-        <div className="w-full flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4 sm:pb-6">
+        <div className="w-full flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-4 sm:pb-6">
           <div className="flex items-center gap-3">
             <span className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: theme.accentHex }} />
             <div className="min-w-0">

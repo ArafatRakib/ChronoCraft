@@ -272,25 +272,33 @@ class BackgroundNotificationService {
       document.title = 'ChronoCraft • Multi-Timer, Stopwatch & HIIT Suite';
     }
 
-    // 4. Ongoing system notification when in background
+    // 4. Ongoing native Android & web system notification
     const now = Date.now();
-    if (
-      typeof window !== 'undefined' &&
-      'Notification' in window &&
-      Notification.permission === 'granted' &&
-      document.visibilityState === 'hidden' &&
-      primaryItem &&
-      anyRunning
-    ) {
-      // Throttle notification updates to prevent drawer flickering
-      if (now - this.lastUpdateMs > 3000) {
+    if (primaryItem && anyRunning) {
+      if (now - this.lastUpdateMs > 1500) {
         this.lastUpdateMs = now;
-        this.showOrUpdateNotification(
-          `${primaryItem.name}: ${primaryItem.formattedTime}`,
+        const title = `${primaryItem.name}: ${primaryItem.formattedTime}`;
+        const body =
           primaryItem.type === 'interval'
-            ? `${primaryItem.phaseName || 'Work'} • Round ${primaryItem.currentRound}/${primaryItem.totalRounds}`
-            : 'Timer running in background'
-        );
+            ? `🔥 HIIT: ${primaryItem.phaseName || 'Work'} • Round ${primaryItem.currentRound}/${primaryItem.totalRounds}`
+            : primaryItem.type === 'stopwatch'
+              ? '⏱️ Stopwatch running'
+              : '⏳ Timer running in background';
+
+        if (capacitorBridge.isNative()) {
+          capacitorBridge.updateRunningNotification(title, body);
+        } else if (
+          typeof window !== 'undefined' &&
+          'Notification' in window &&
+          Notification.permission === 'granted' &&
+          document.visibilityState === 'hidden'
+        ) {
+          this.showOrUpdateNotification(title, body);
+        }
+      }
+    } else {
+      if (capacitorBridge.isNative()) {
+        capacitorBridge.clearRunningNotification();
       }
     }
   }

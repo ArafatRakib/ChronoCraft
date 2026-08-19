@@ -231,6 +231,68 @@ export default function App() {
     }
   }, [stopwatches, timers, intervals]);
 
+  // Keep ongoing Lock Screen & Notification shade in sync with running items
+  useEffect(() => {
+    const runningStopwatch = stopwatches.find((s) => s.isRunning);
+    const runningTimer = timers.find((t) => t.isRunning);
+    const runningInterval = intervals.find((i) => i.isRunning);
+
+    const isAnyRunning = Boolean(runningStopwatch || runningTimer || runningInterval);
+
+    if (!isAnyRunning) {
+      backgroundNotificationService.update(null, false);
+      return;
+    }
+
+    let summary: ActiveItemSummary | null = null;
+    if (runningInterval) {
+      const activePhase = runningInterval.phases[runningInterval.currentPhaseIndex] || runningInterval.phases[0];
+      const elapsed = runningInterval.startedAt ? now - runningInterval.startedAt : 0;
+      const rem = Math.max(0, runningInterval.phaseRemainingMs - elapsed);
+      const timeFmt = formatTime(rem);
+      summary = {
+        id: runningInterval.id,
+        name: runningInterval.name,
+        type: 'interval',
+        formattedTime: `${timeFmt.minutes}:${timeFmt.seconds}`,
+        isRunning: true,
+        phaseName: activePhase.name,
+        currentRound: runningInterval.currentRound,
+        totalRounds: runningInterval.totalRounds,
+      };
+    } else if (runningTimer) {
+      const rem = getTimerRemaining(runningTimer, now);
+      const timeFmt = formatTime(rem);
+      const formattedTime =
+        parseInt(timeFmt.hours, 10) > 0
+          ? `${timeFmt.hours}:${timeFmt.minutes}:${timeFmt.seconds}`
+          : `${timeFmt.minutes}:${timeFmt.seconds}`;
+      summary = {
+        id: runningTimer.id,
+        name: runningTimer.name,
+        type: 'timer',
+        formattedTime,
+        isRunning: true,
+      };
+    } else if (runningStopwatch) {
+      const elapsed = getStopwatchElapsed(runningStopwatch, now);
+      const timeFmt = formatTime(elapsed);
+      const formattedTime =
+        parseInt(timeFmt.hours, 10) > 0
+          ? `${timeFmt.hours}:${timeFmt.minutes}:${timeFmt.seconds}.${timeFmt.centiseconds}`
+          : `${timeFmt.minutes}:${timeFmt.seconds}.${timeFmt.centiseconds}`;
+      summary = {
+        id: runningStopwatch.id,
+        name: runningStopwatch.name,
+        type: 'stopwatch',
+        formattedTime,
+        isRunning: true,
+      };
+    }
+
+    backgroundNotificationService.update(summary, true);
+  }, [now, stopwatches, timers, intervals]);
+
   // Main High Precision Ticker Loop (50ms)
   useEffect(() => {
     const interval = setInterval(() => {

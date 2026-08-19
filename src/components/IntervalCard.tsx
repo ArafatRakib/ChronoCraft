@@ -116,13 +116,15 @@ export const IntervalCard: React.FC<IntervalCardProps> = ({
     ) {
       return;
     }
-    const currentTime = new Date().getTime();
+    const currentTime = Date.now();
     const tapLength = currentTime - lastTapRef.current;
-    if (tapLength < 300 && tapLength > 0) {
+    if (tapLength < 450 && tapLength > 40) {
       if (onOpenFocus) {
         onOpenFocus(interval.id);
         e.preventDefault();
       }
+      lastTapRef.current = 0;
+      return;
     }
     lastTapRef.current = currentTime;
   };
