@@ -1,4 +1,5 @@
 import { SoundPreset } from '../types';
+import { capacitorBridge } from './capacitorNativeBridge';
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
@@ -26,8 +27,10 @@ class SoundEngine {
   > = new Map();
 
   public playAlert(preset: SoundPreset = 'chime') {
-    // Hardware vibration on alert
-    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    // Native and web hardware vibration on alert
+    if (capacitorBridge.isNative()) {
+      capacitorBridge.triggerHaptic('alarm');
+    } else if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       try {
         navigator.vibrate([400, 150, 400, 150, 600]);
       } catch {}

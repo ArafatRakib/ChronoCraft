@@ -4,6 +4,8 @@
  * Android/iOS lock screen, notification shade, and browser status.
  */
 
+import { capacitorBridge } from './capacitorNativeBridge';
+
 export interface ActiveItemSummary {
   id: string;
   name: string;
@@ -182,6 +184,10 @@ class BackgroundNotificationService {
   public async requestNotificationPermission(): Promise<boolean> {
     this.unlockAudio();
 
+    if (capacitorBridge.isNative()) {
+      return await capacitorBridge.requestPermissions();
+    }
+
     if (typeof window === 'undefined' || !('Notification' in window)) {
       return false;
     }
@@ -314,6 +320,12 @@ class BackgroundNotificationService {
    */
   public notifyCompletion(title: string, message: string) {
     if (typeof window === 'undefined') return;
+
+    // Native Capacitor Android high-priority notification and alarm haptic
+    if (capacitorBridge.isNative()) {
+      capacitorBridge.triggerImmediateAlarm(title, message);
+      return;
+    }
 
     // Strong repeating vibration pattern for silent/vibrate mode
     if ('vibrate' in navigator) {

@@ -38,6 +38,7 @@ import { speechManager } from './utils/speech';
 import { wakeLockManager } from './utils/wakeLock';
 import { mediaSessionManager } from './utils/mediaSession';
 import { backgroundNotificationService, ActiveItemSummary } from './utils/backgroundNotificationService';
+import { capacitorBridge } from './utils/capacitorNativeBridge';
 import { Navbar } from './components/Navbar';
 import { NotificationPermissionBanner } from './components/NotificationPermissionBanner';
 import { StopwatchCard } from './components/StopwatchCard';
@@ -154,6 +155,11 @@ export default function App() {
   const halfwayNotifiedTimers = useRef<Set<string>>(new Set());
   const reachedTargetGoals = useRef<Set<string>>(new Set());
   const lastPhaseKey = useRef<Map<string, string>>(new Map());
+
+  // Initialize Capacitor Native Channels on app start
+  useEffect(() => {
+    capacitorBridge.initialize();
+  }, []);
 
   // Unlock web audio on first click
   useEffect(() => {
@@ -479,6 +485,16 @@ export default function App() {
     if (analyticsStopwatchId === id) setAnalyticsStopwatchId(null);
   };
 
+  // Safe 32-bit positive integer for Capacitor LocalNotifications ID
+  const getNumericId = (idStr: string): number => {
+    let hash = 0;
+    for (let i = 0; i < idStr.length; i++) {
+      hash = (hash << 5) - hash + idStr.charCodeAt(i);
+      hash |= 0;
+    }
+    return Math.abs(hash) % 2147483647;
+  };
+
   // ==========================================
   // TIMER ACTIONS
   // ==========================================
@@ -486,6 +502,20 @@ export default function App() {
     soundEngine.stopAlarm(id);
     firedTimerIds.current.delete(id);
     backgroundNotificationService.requestNotificationPermission();
+
+    const targetTimer = timers.find((t) => t.id === id);
+    if (targetTimer) {
+      const remaining = getTimerRemaining(targetTimer, Date.now());
+      if (remaining > 0) {
+        capacitorBridge.scheduleAlarm(
+          getNumericId(id),
+          targetTimer.name,
+          "Time's up! Your countdown has finished.",
+          new Date(Date.now() + remaining)
+        );
+      }
+    }
+
     setTimers((prev) =>
       prev.map((t) =>
         t.id === id ? { ...t, isRunning: true, startedAt: Date.now(), isCompleted: false } : t
@@ -495,6 +525,7 @@ export default function App() {
 
   const handlePauseTimer = (id: string) => {
     soundEngine.stopAlarm(id);
+    capacitorBridge.cancelAlarm(getNumericId(id));
     setTimers((prev) =>
       prev.map((t) => {
         if (t.id === id && t.isRunning && t.startedAt) {
@@ -508,6 +539,7 @@ export default function App() {
 
   const handleResetTimer = (id: string) => {
     soundEngine.stopAlarm(id);
+    capacitorBridge.cancelAlarm(getNumericId(id));
     firedTimerIds.current.delete(id);
     halfwayNotifiedTimers.current.delete(id);
     setTimers((prev) =>
@@ -534,6 +566,16 @@ export default function App() {
           const currentRem = getTimerRemaining(t, Date.now());
           const newRem = currentRem + extraMs;
           const newDuration = Math.max(t.duration, newRem);
+
+          if (t.isRunning) {
+            capacitorBridge.scheduleAlarm(
+              getNumericId(id),
+              t.name,
+              "Time's up! Your countdown has finished.",
+              new Date(Date.now() + newRem)
+            );
+          }
+
           return {
             ...t,
             duration: newDuration,
@@ -578,6 +620,7 @@ export default function App() {
 
   const handleDeleteTimer = (id: string) => {
     soundEngine.stopAlarm(id);
+    capacitorBridge.cancelAlarm(getNumericId(id));
     firedTimerIds.current.delete(id);
     halfwayNotifiedTimers.current.delete(id);
     setTimers((prev) => prev.filter((t) => t.id !== id));
@@ -790,9 +833,19 @@ export default function App() {
       prev.map((sw) => (sw.isRunning ? sw : { ...sw, isRunning: true, startedAt: cur }))
     );
     setTimers((prev) =>
-      prev.map((t) =>
-        t.isRunning || t.isCompleted ? t : { ...t, isRunning: true, startedAt: cur }
-      )
+      prev.map((t) => {
+        if (t.isRunning || t.isCompleted) return t;
+        const rem = getTimerRemaining(t, cur);
+        if (rem > 0) {
+          capacitorBridge.scheduleAlarm(
+            getNumericId(t.id),
+            t.name,
+            "Time's up! Your countdown has finished.",
+            new Date(cur + rem)
+          );
+        }
+        return { ...t, isRunning: true, startedAt: cur };
+      })
     );
     setIntervals((prev) =>
       prev.map((inv) =>
@@ -803,6 +856,7 @@ export default function App() {
 
   const handlePauseAll = () => {
     const cur = Date.now();
+    timers.forEach((t) => capacitorBridge.cancelAlarm(getNumericId(t.id)));
     setStopwatches((prev) =>
       prev.map((sw) => {
         if (sw.isRunning && sw.startedAt) {
@@ -831,6 +885,7 @@ export default function App() {
   };
 
   const handleResetAll = () => {
+    timers.forEach((t) => capacitorBridge.cancelAlarm(getNumericId(t.id)));
     setStopwatches((prev) =>
       prev.map((sw) => ({ ...sw, isRunning: false, startedAt: null, accumulatedTime: 0, laps: [] }))
     );

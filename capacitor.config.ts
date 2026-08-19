@@ -6,6 +6,13 @@ export interface CapacitorConfig {
     androidScheme?: string;
   };
   backgroundColor?: string;
+  plugins?: {
+    LocalNotifications?: {
+      smallIcon?: string;
+      iconColor?: string;
+      sound?: string;
+    };
+  };
 }
 
 const config: CapacitorConfig = {
@@ -16,6 +23,13 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
   },
   backgroundColor: '#020617',
+  plugins: {
+    LocalNotifications: {
+      smallIcon: 'ic_stat_name',
+      iconColor: '#4F46E5',
+      sound: 'alarm.wav',
+    },
+  },
 };
 
 export default config;
