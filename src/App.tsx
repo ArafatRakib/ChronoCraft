@@ -29,6 +29,8 @@ import {
   saveVoicePreference,
   loadGlobalSoundPreference,
   saveGlobalSoundPreference,
+  loadGlobalSoundRepeatPreference,
+  saveGlobalSoundRepeatPreference,
   getStopwatchElapsed, 
   getTimerRemaining,
   getIntervalState
@@ -138,6 +140,7 @@ export default function App() {
   const [wakeLockActive, setWakeLockActive] = useState<boolean>(false);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(() => loadVoicePreference());
   const [globalSound, setGlobalSound] = useState<SoundPreset>(() => loadGlobalSoundPreference());
+  const [globalSoundRepeat, setGlobalSoundRepeat] = useState<number>(() => loadGlobalSoundRepeatPreference());
   const [activeTab, setActiveTab] = useState<ActiveTab>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedColorFilter, setSelectedColorFilter] = useState<string>('all');
@@ -803,8 +806,8 @@ export default function App() {
     name: string,
     durationMs: number,
     color: ColorName,
-    soundAlert: SoundPreset,
-    soundRepeat: number = 3,
+    soundAlert: SoundPreset = globalSound,
+    soundRepeat: number = globalSoundRepeat,
     overtimeEnabled: boolean = true,
     voiceEnabledPref: boolean = true
   ) => {
@@ -832,7 +835,7 @@ export default function App() {
     color: ColorName,
     rounds: number,
     phases: IntervalPhase[],
-    sound: SoundPreset,
+    sound: SoundPreset = globalSound,
     voiceEnabledPref: boolean = true
   ) => {
     const formattedName = capitalizeWords(name) || 'HIIT Interval';
@@ -883,10 +886,10 @@ export default function App() {
         preset.color,
         preset.intervalConfig.rounds || 8,
         phasesWithIds,
-        'bell'
+        globalSound
       );
     } else {
-      handleCreateTimer(preset.title, preset.durationMs, preset.color, 'chime');
+      handleCreateTimer(preset.title, preset.durationMs, preset.color, globalSound, globalSoundRepeat);
     }
   };
 
@@ -1515,7 +1518,7 @@ export default function App() {
                   className={
                     viewLayout === 'compact'
                       ? 'flex flex-col gap-2'
-                      : 'grid gap-2.5 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                      : 'grid gap-2.5 sm:gap-4 lg:gap-6 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4'
                   }
                 >
                   {filteredIntervals.map((inv) => {
@@ -1560,6 +1563,7 @@ export default function App() {
         onClose={() => setIsCreateOpen(false)}
         initialType={createInitialType}
         defaultSound={globalSound}
+        defaultSoundRepeat={globalSoundRepeat}
         onCreateStopwatch={handleCreateStopwatch}
         onCreateTimer={handleCreateTimer}
         onCreateInterval={handleCreateInterval}
@@ -1569,11 +1573,14 @@ export default function App() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         globalSound={globalSound}
-        onUpdateGlobalSound={(newSound, applyToExisting) => {
+        globalSoundRepeat={globalSoundRepeat}
+        onUpdateGlobalSound={(newSound, newRepeat, applyToExisting) => {
           setGlobalSound(newSound);
           saveGlobalSoundPreference(newSound);
+          setGlobalSoundRepeat(newRepeat);
+          saveGlobalSoundRepeatPreference(newRepeat);
           if (applyToExisting) {
-            setTimers((prev) => prev.map((t) => ({ ...t, soundAlert: newSound })));
+            setTimers((prev) => prev.map((t) => ({ ...t, soundAlert: newSound, soundRepeat: newRepeat })));
             setIntervals((prev) => prev.map((inv) => ({ ...inv, soundAlert: newSound })));
           }
         }}

@@ -235,8 +235,8 @@ class CapacitorNativeBridge {
             id: randomId,
             title: `⏰ ${title}`,
             body,
-            schedule: { at: new Date(Date.now() + 50) },
             channelId: ALARM_CHANNEL_ID,
+            autoCancel: true,
           },
         ],
       });

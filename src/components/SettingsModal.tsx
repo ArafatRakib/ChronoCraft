@@ -23,7 +23,8 @@ interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   globalSound: SoundPreset;
-  onUpdateGlobalSound: (sound: SoundPreset, applyToAllExisting?: boolean) => void;
+  globalSoundRepeat?: number;
+  onUpdateGlobalSound: (sound: SoundPreset, repeat: number, applyToAllExisting?: boolean) => void;
   isMuted: boolean;
   onToggleMute: () => void;
   voiceEnabled: boolean;
@@ -40,10 +41,18 @@ const SOUND_OPTIONS: { id: SoundPreset; name: string; description: string; tag: 
   { id: 'gentle', name: 'Gentle Harp', description: 'Soft undulating acoustic arpeggio.', tag: 'Calm' },
 ];
 
+const REPEAT_OPTIONS: { value: number; label: string; desc: string }[] = [
+  { value: 1, label: '1x', desc: 'Play once' },
+  { value: 3, label: '3x', desc: 'Play 3 times (Default)' },
+  { value: 5, label: '5x', desc: 'Play 5 times' },
+  { value: 0, label: 'Loop', desc: 'Repeat until dismissed' },
+];
+
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
   globalSound,
+  globalSoundRepeat = 3,
   onUpdateGlobalSound,
   isMuted,
   onToggleMute,
@@ -53,6 +62,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onToggleWakeLock,
 }) => {
   const [selectedSound, setSelectedSound] = useState<SoundPreset>(globalSound);
+  const [selectedRepeat, setSelectedRepeat] = useState<number>(globalSoundRepeat);
   const [playingSound, setPlayingSound] = useState<SoundPreset | null>(null);
   const [testNotificationSent, setTestNotificationSent] = useState(false);
   const [applyToExisting, setApplyToExisting] = useState(false);
@@ -70,7 +80,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const handleSave = () => {
-    onUpdateGlobalSound(selectedSound, applyToExisting);
+    onUpdateGlobalSound(selectedSound, selectedRepeat, applyToExisting);
     setSavedSuccess(true);
     setTimeout(() => {
       setSavedSuccess(false);
@@ -179,6 +189,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               })}
             </div>
 
+            {/* Section 1.5: Alarm Repeat Count */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                  <RotateCcw className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Alarm Tone Repeat Count</span>
+                </label>
+                <span className="text-[11px] text-slate-400">
+                  {REPEAT_OPTIONS.find((r) => r.value === selectedRepeat)?.desc}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2">
+                {REPEAT_OPTIONS.map((opt) => {
+                  const isSelected = selectedRepeat === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setSelectedRepeat(opt.value)}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                        isSelected
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25 ring-2 ring-indigo-600 ring-offset-1 dark:ring-offset-slate-900'
+                          : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700/60'
+                      }`}
+                    >
+                      <span className="text-sm font-extrabold">{opt.label}</span>
+                      <span className={`text-[9px] ${isSelected ? 'text-indigo-100' : 'text-slate-400'}`}>
+                        {opt.value === 0 ? 'Continuous' : `${opt.value} ${opt.value === 1 ? 'time' : 'times'}`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Checkbox to apply to all existing items */}
             <label className="flex items-center gap-2.5 pt-1 text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
               <input
@@ -187,7 +233,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onChange={(e) => setApplyToExisting(e.target.checked)}
                 className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-700 dark:bg-slate-800"
               />
-              <span>Also update sound on all existing timers & interval workouts</span>
+              <span>Also update sound & repeat count on all existing timers</span>
             </label>
           </div>
 

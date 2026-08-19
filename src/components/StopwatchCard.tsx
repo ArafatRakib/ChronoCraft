@@ -72,22 +72,52 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
   const [showLaps, setShowLaps] = useState(true);
   const [copied, setCopied] = useState(false);
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({ right: 0 });
+  const cardRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const lastTapRef = useRef<number>(0);
 
-  // Smart popover position clamping
+  // Smart popover position clamping (touching left edge for left watches, right edge for right watches)
   useEffect(() => {
-    if ((showMenu || showColorPicker) && menuRef.current) {
-      const rect = menuRef.current.getBoundingClientRect();
-      const popoverWidth = showColorPicker ? 240 : 180;
-      const leftEdge = rect.right - popoverWidth;
+    if ((showMenu || showColorPicker) && menuRef.current && cardRef.current) {
+      const updatePosition = () => {
+        if (!menuRef.current || !cardRef.current) return;
+        const triggerRect = menuRef.current.getBoundingClientRect();
+        const cardRect = cardRef.current.getBoundingClientRect();
+        
+        // Determine if this watch is on the left side or right side of the screen
+        const cardCenter = cardRect.left + cardRect.width / 2;
+        const isLeftHalf = cardCenter < window.innerWidth / 2;
 
-      if (leftEdge < 12) {
-        const shiftRight = 12 - leftEdge;
-        setMenuStyle({ right: `-${shiftRight}px`, left: 'auto' });
-      } else {
-        setMenuStyle({ right: 0, left: 'auto' });
-      }
+        if (isLeftHalf) {
+          // Touch / align flush with the LEFT edge of the card
+          const leftOffset = cardRect.left - triggerRect.left;
+          const actualLeft = triggerRect.left + leftOffset;
+          const adjustedLeftOffset = actualLeft < 8 ? leftOffset + (8 - actualLeft) : leftOffset;
+
+          setMenuStyle({
+            left: `${adjustedLeftOffset}px`,
+            right: 'auto',
+            maxWidth: 'calc(100vw - 20px)'
+          });
+        } else {
+          // Touch / align flush with the RIGHT edge of the card
+          const rightOffset = triggerRect.right - cardRect.right;
+          const actualRight = triggerRect.right - rightOffset;
+          const adjustedRightOffset = actualRight > window.innerWidth - 8 
+            ? rightOffset + (actualRight - (window.innerWidth - 8)) 
+            : rightOffset;
+
+          setMenuStyle({
+            right: `${adjustedRightOffset}px`,
+            left: 'auto',
+            maxWidth: 'calc(100vw - 20px)'
+          });
+        }
+      };
+
+      updatePosition();
+      const raf = requestAnimationFrame(updatePosition);
+      return () => cancelAnimationFrame(raf);
     }
   }, [showMenu, showColorPicker]);
 
@@ -199,6 +229,7 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
   if (isCompact) {
     return (
       <div 
+        ref={cardRef}
         onDoubleClick={handleDoubleClick}
         onTouchEnd={handleTouchEnd}
         className={`relative rounded-xl transition-all border-l-4 border-y border-r ${theme.border} bg-white dark:bg-slate-900/90 shadow-sm hover:shadow-md p-3 flex items-center justify-between gap-3 select-none ${
@@ -285,6 +316,7 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
   // Standard Grid Card
   return (
     <div 
+      ref={cardRef}
       onDoubleClick={handleDoubleClick}
       onTouchEnd={handleTouchEnd}
       className={`relative rounded-xl sm:rounded-2xl transition-all duration-300 border-t-4 border-x border-b ${

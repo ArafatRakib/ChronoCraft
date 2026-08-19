@@ -9,6 +9,7 @@ const THEME_KEY = 'chrono_theme_v1';
 const WAKELOCK_PREF_KEY = 'chrono_wakelock_pref_v1';
 const VOICE_PREF_KEY = 'chrono_voice_pref_v1';
 const GLOBAL_SOUND_PREF_KEY = 'chrono_global_sound_v1';
+const GLOBAL_SOUND_REPEAT_PREF_KEY = 'chrono_global_sound_repeat_v1';
 
 export function loadGlobalSoundPreference(): SoundPreset {
   if (typeof window === 'undefined') return 'chime';
@@ -25,6 +26,27 @@ export function saveGlobalSoundPreference(sound: SoundPreset) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(GLOBAL_SOUND_PREF_KEY, sound);
+  } catch {}
+}
+
+export function loadGlobalSoundRepeatPreference(): number {
+  if (typeof window === 'undefined') return 3;
+  try {
+    const raw = localStorage.getItem(GLOBAL_SOUND_REPEAT_PREF_KEY);
+    if (raw !== null) {
+      const val = parseInt(raw, 10);
+      if (val === 1 || val === 3 || val === 5 || val === 0) {
+        return val;
+      }
+    }
+  } catch {}
+  return 3;
+}
+
+export function saveGlobalSoundRepeatPreference(repeat: number) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(GLOBAL_SOUND_REPEAT_PREF_KEY, repeat.toString());
   } catch {}
 }
 

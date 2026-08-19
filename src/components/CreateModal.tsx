@@ -26,6 +26,7 @@ interface CreateModalProps {
   onClose: () => void;
   initialType?: 'stopwatch' | 'timer' | 'interval';
   defaultSound?: SoundPreset;
+  defaultSoundRepeat?: number;
   onCreateStopwatch: (name: string, color: ColorName, targetGoalMs?: number) => void;
   onCreateTimer: (
     name: string, 
@@ -51,6 +52,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
   onClose,
   initialType = 'timer',
   defaultSound = 'chime',
+  defaultSoundRepeat = 3,
   onCreateStopwatch,
   onCreateTimer,
   onCreateInterval,
@@ -59,7 +61,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
   const [name, setName] = useState('');
   const [color, setColor] = useState<ColorName>('indigo');
   const [sound, setSound] = useState<SoundPreset>(defaultSound);
-  const [soundRepeat, setSoundRepeat] = useState<number>(3);
+  const [soundRepeat, setSoundRepeat] = useState<number>(defaultSoundRepeat);
   const [overtimeEnabled, setOvertimeEnabled] = useState<boolean>(true);
   const [voiceEnabled, setVoiceEnabled] = useState<boolean>(true);
 
@@ -87,7 +89,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
       setName('');
       setColor(initialType === 'interval' ? 'rose' : 'indigo');
       setSound(defaultSound || 'chime');
-      setSoundRepeat(3);
+      setSoundRepeat(defaultSoundRepeat || 3);
       setOvertimeEnabled(true);
       setVoiceEnabled(true);
       setHours(0);
