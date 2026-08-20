@@ -227,7 +227,7 @@ class BackgroundNotificationService {
       }
     }
 
-    // 2. Manage MediaSession (Lock screen & Notification shade card)
+        // 2. Manage MediaSession (Lock screen & Notification shade interactive card)
     if ('mediaSession' in navigator) {
       if (primaryItem && anyRunning) {
         let artist = 'ChronoCraft Suite';
@@ -265,6 +265,20 @@ class BackgroundNotificationService {
       }
     }
 
+    // ------------------------------------------------------------------------
+    // ADD THIS CODE HERE: Update native ongoing Android notification shade
+    // ------------------------------------------------------------------------
+    if (primaryItem && anyRunning) {
+      if (capacitorBridge.isNative()) {
+        capacitorBridge.updateRunningNotification(
+          primaryItem.name,
+          `${primaryItem.formattedTime} • ${primaryItem.type.toUpperCase()}`
+        );
+      }
+    } else if (!anyRunning && capacitorBridge.isNative()) {
+      capacitorBridge.clearRunningNotification();
+    }
+    
     // 3. Document title synchronization
     if (primaryItem && anyRunning) {
       document.title = `(${primaryItem.formattedTime}) ${primaryItem.name} • ChronoCraft`;
@@ -272,35 +286,12 @@ class BackgroundNotificationService {
       document.title = 'ChronoCraft • Multi-Timer, Stopwatch & HIIT Suite';
     }
 
-    // 4. Ongoing native Android & web system notification
-    const now = Date.now();
-    if (primaryItem && anyRunning) {
-      if (now - this.lastUpdateMs >= 1000 || this.lastUpdateMs === 0) {
-        this.lastUpdateMs = now;
-        const title = `${primaryItem.name}: ${primaryItem.formattedTime}`;
-        const body =
-          primaryItem.type === 'interval'
-            ? `🔥 HIIT: ${primaryItem.phaseName || 'Work'} • Round ${primaryItem.currentRound}/${primaryItem.totalRounds}`
-            : primaryItem.type === 'stopwatch'
-              ? '⏱️ Stopwatch running'
-              : '⏳ Timer running in background';
-
-        if (capacitorBridge.isNative()) {
-          capacitorBridge.updateRunningNotification(title, body);
-        } else if (
-          typeof window !== 'undefined' &&
-          'Notification' in window &&
-          Notification.permission === 'granted' &&
-          document.visibilityState === 'hidden'
-        ) {
-          this.showOrUpdateNotification(title, body);
-        }
-      }
-    } else {
-      this.lastUpdateMs = 0;
-      if (capacitorBridge.isNative()) {
-        capacitorBridge.clearRunningNotification();
-      }
+    // 4. Ongoing native Android notification handling
+    // When on native Android, the MediaSession already renders the persistent Android Media Notification 
+    // with smooth Play/Pause/Reset actions in both the lock screen and notification shade.
+    // If running with a timer, we also schedule exact AlarmManager wakeup at expiration.
+    if (!anyRunning && capacitorBridge.isNative()) {
+      capacitorBridge.clearRunningNotification();
     }
   }
 

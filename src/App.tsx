@@ -40,7 +40,6 @@ import { formatTime } from './utils/timeFormatter';
 import { soundEngine } from './utils/audio';
 import { speechManager } from './utils/speech';
 import { wakeLockManager } from './utils/wakeLock';
-import { mediaSessionManager } from './utils/mediaSession';
 import { backgroundNotificationService, ActiveItemSummary } from './utils/backgroundNotificationService';
 import { capacitorBridge } from './utils/capacitorNativeBridge';
 import { Navbar } from './components/Navbar';
@@ -200,45 +199,6 @@ export default function App() {
     }
   }, [wakeLockPref, anyRunning]);
 
-  // Sync Lock Screen Media Controls (MediaSession API)
-  useEffect(() => {
-    const runningTimer = timers.find((t) => t.isRunning);
-    const runningStopwatch = stopwatches.find((s) => s.isRunning);
-    const runningInterval = intervals.find((i) => i.isRunning);
-
-    if (runningTimer) {
-      mediaSessionManager.updateSession({
-        title: runningTimer.name,
-        artist: 'Timer Running • ChronoCraft',
-        isRunning: true,
-        onPlay: () => handleStartTimer(runningTimer.id),
-        onPause: () => handlePauseTimer(runningTimer.id),
-        onReset: () => handleResetTimer(runningTimer.id),
-      });
-    } else if (runningInterval) {
-      const activePhase = runningInterval.phases[runningInterval.currentPhaseIndex] || runningInterval.phases[0];
-      mediaSessionManager.updateSession({
-        title: `${runningInterval.name} (Round ${runningInterval.currentRound}/${runningInterval.totalRounds})`,
-        artist: `${activePhase.name} • ChronoCraft`,
-        isRunning: true,
-        onPlay: () => handleStartInterval(runningInterval.id),
-        onPause: () => handlePauseInterval(runningInterval.id),
-        onReset: () => handleResetInterval(runningInterval.id),
-      });
-    } else if (runningStopwatch) {
-      mediaSessionManager.updateSession({
-        title: runningStopwatch.name,
-        artist: 'Stopwatch Running • ChronoCraft',
-        isRunning: true,
-        onPlay: () => handleStartStopwatch(runningStopwatch.id),
-        onPause: () => handlePauseStopwatch(runningStopwatch.id),
-        onReset: () => handleResetStopwatch(runningStopwatch.id),
-      });
-    } else {
-      mediaSessionManager.stopSession();
-    }
-  }, [stopwatches, timers, intervals]);
-
   // Keep ongoing Lock Screen & Notification shade in sync with running items
   useEffect(() => {
     const runningStopwatch = stopwatches.find((s) => s.isRunning);
@@ -268,6 +228,13 @@ export default function App() {
         currentRound: runningInterval.currentRound,
         totalRounds: runningInterval.totalRounds,
       };
+
+      backgroundNotificationService.registerActionCallbacks({
+        onPlay: () => handleStartInterval(runningInterval.id),
+        onPause: () => handlePauseInterval(runningInterval.id),
+        onReset: () => handleResetInterval(runningInterval.id),
+        onSkip: () => handleStartInterval(runningInterval.id),
+      });
     } else if (runningTimer) {
       const rem = getTimerRemaining(runningTimer, now);
       const timeFmt = formatTime(rem);
@@ -282,13 +249,19 @@ export default function App() {
         formattedTime,
         isRunning: true,
       };
+
+      backgroundNotificationService.registerActionCallbacks({
+        onPlay: () => handleStartTimer(runningTimer.id),
+        onPause: () => handlePauseTimer(runningTimer.id),
+        onReset: () => handleResetTimer(runningTimer.id),
+      });
     } else if (runningStopwatch) {
       const elapsed = getStopwatchElapsed(runningStopwatch, now);
       const timeFmt = formatTime(elapsed);
       const formattedTime =
         parseInt(timeFmt.hours, 10) > 0
-          ? `${timeFmt.hours}:${timeFmt.minutes}:${timeFmt.seconds}.${timeFmt.centiseconds}`
-          : `${timeFmt.minutes}:${timeFmt.seconds}.${timeFmt.centiseconds}`;
+          ? `${timeFmt.hours}:${timeFmt.minutes}:${timeFmt.seconds}`
+          : `${timeFmt.minutes}:${timeFmt.seconds}`;
       summary = {
         id: runningStopwatch.id,
         name: runningStopwatch.name,
@@ -296,6 +269,13 @@ export default function App() {
         formattedTime,
         isRunning: true,
       };
+
+      backgroundNotificationService.registerActionCallbacks({
+        onPlay: () => handleStartStopwatch(runningStopwatch.id),
+        onPause: () => handlePauseStopwatch(runningStopwatch.id),
+        onReset: () => handleResetStopwatch(runningStopwatch.id),
+        onSkip: () => handleAddLap(runningStopwatch.id),
+      });
     }
 
     backgroundNotificationService.update(summary, true);

@@ -6,16 +6,19 @@ import { Check, Pipette, Hash } from 'lucide-react';
 interface ColorPickerProps {
   selectedColor: ColorName;
   onChange: (color: ColorName) => void;
+  onSelectColor?: (color: ColorName) => void;
   size?: 'sm' | 'md';
 }
 
 export const ColorPicker: React.FC<ColorPickerProps> = ({
   selectedColor,
   onChange,
+  onSelectColor,
   size = 'md',
 }) => {
   const dotSize = size === 'sm' ? 'w-6 h-6' : 'w-7 h-7';
   const colorInputRef = useRef<HTMLInputElement>(null);
+  const handleSelect = onSelectColor || onChange || (() => {});
   
   const isPreset = COLOR_KEYS.includes(selectedColor as any);
   const currentTheme = getColorTheme(selectedColor);
@@ -43,7 +46,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
             <button
               key={key}
               type="button"
-              onClick={() => onChange(key)}
+              onClick={() => handleSelect(key)}
               title={theme.label}
               className={`${dotSize} rounded-full transition-all duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900 border border-black/10 dark:border-white/10 cursor-pointer ${
                 isSelected ? 'scale-110 ring-2 ring-slate-800 dark:ring-slate-100 shadow-md' : 'opacity-80 hover:opacity-100 hover:scale-105'

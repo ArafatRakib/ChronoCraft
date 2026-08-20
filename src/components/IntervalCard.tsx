@@ -470,6 +470,19 @@ export const IntervalCard: React.FC<IntervalCardProps> = ({
 
       {/* Main Body with Circular Gauge */}
       <div className="p-4 sm:p-5 flex flex-col items-center justify-center">
+        {/* Phase Tag Pill */}
+            <span
+              className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider mb-1 max-w-[120px] truncate"
+              style={{
+                backgroundColor: `${phaseTheme.accentHex}20`,
+                color: phaseTheme.accentHex,
+              }}
+            >
+              {currentPhase?.name || 'Phase'}
+            </span>
+
+        
+        {/* Time ring */}
         <div className="relative flex items-center justify-center">
           <svg className="w-28 h-28 xs:w-32 xs:h-32 sm:w-40 sm:h-40 -rotate-90" viewBox="0 0 100 100">
             <circle
@@ -493,16 +506,6 @@ export const IntervalCard: React.FC<IntervalCardProps> = ({
           </svg>
 
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            {/* Phase Tag Pill */}
-            <span
-              className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider mb-1 max-w-[120px] truncate"
-              style={{
-                backgroundColor: `${phaseTheme.accentHex}20`,
-                color: phaseTheme.accentHex,
-              }}
-            >
-              {currentPhase?.name || 'Phase'}
-            </span>
 
             {/* Time Remaining */}
             <div className="font-mono font-black text-2xl xs:text-3xl sm:text-4xl text-slate-800 dark:text-slate-100 tabular-nums">
