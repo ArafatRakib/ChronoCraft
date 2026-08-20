@@ -59,11 +59,13 @@ export interface TimerItem {
   createdAt: number;
 }
 
+export type IntervalPhaseType = 'prepare' | 'work' | 'rest' | 'cooldown';
+
 export interface IntervalPhase {
   id: string;
   name: string;
   durationMs: number;
-  type: 'prepare' | 'work' | 'rest' | 'cooldown';
+  type: IntervalPhaseType;
   color: ColorName;
 }
 

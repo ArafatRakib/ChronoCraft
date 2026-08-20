@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SoundPreset } from '../types';
 import { soundEngine } from '../utils/audio';
+import { speechAssistant } from '../utils/speech';
 import { capacitorBridge } from '../utils/capacitorNativeBridge';
 import { 
   X, 
@@ -270,25 +271,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               {/* Voice toggle */}
               <div 
-                onClick={onToggleVoice}
-                className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                className={`p-3 rounded-2xl border transition-all flex flex-col justify-between gap-2.5 ${
                   voiceEnabled 
                     ? 'border-indigo-500/50 bg-indigo-50/40 dark:bg-indigo-950/20' 
                     : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50'
                 }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <div className={`p-2 rounded-xl ${voiceEnabled ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
-                    <Mic className="w-4 h-4" />
+                <div 
+                  onClick={onToggleVoice}
+                  className="flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className={`p-2 rounded-xl ${voiceEnabled ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
+                      <Mic className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white block">Voice Coach</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">{voiceEnabled ? 'Announcing' : 'Off'}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white block">Voice Coach</span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400">{voiceEnabled ? 'Announcing' : 'Off'}</span>
+                  <div className={`w-9 h-5 rounded-full p-0.5 transition-colors ${voiceEnabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                    <div className={`w-4 h-4 rounded-full bg-white transition-transform ${voiceEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
                   </div>
                 </div>
-                <div className={`w-9 h-5 rounded-full p-0.5 transition-colors ${voiceEnabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
-                  <div className={`w-4 h-4 rounded-full bg-white transition-transform ${voiceEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
-                </div>
+
+                {voiceEnabled && (
+                  <div className="flex items-center justify-between pt-1 border-t border-indigo-100 dark:border-indigo-900/40">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">TTS Engine Test:</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        speechAssistant.testVoice();
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <Volume2 className="w-3 h-3" />
+                      <span>Test Voice Speech</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
