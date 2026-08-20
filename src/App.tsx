@@ -749,8 +749,20 @@ export default function App() {
     setIntervals((prev) => prev.map((inv) => (inv.id === id ? { ...inv, name: formatted || inv.name } : inv)));
   };
 
-  const handleUpdateIntervalColor = (id: string, color: ColorName) => {
-    setIntervals((prev) => prev.map((inv) => (inv.id === id ? { ...inv, color } : inv)));
+    const handleUpdateIntervalColor = (id: string, color: ColorName) => {
+    setIntervals((prev) =>
+      prev.map((inv) => {
+        if (inv.id !== id) return inv;
+        const updatedPhases = [...inv.phases];
+        if (updatedPhases[inv.currentPhaseIndex]) {
+          updatedPhases[inv.currentPhaseIndex] = {
+            ...updatedPhases[inv.currentPhaseIndex],
+            color,
+          };
+        }
+        return { ...inv, phases: updatedPhases };
+      })
+    );
   };
 
   const handleToggleIntervalVoice = (id: string) => {

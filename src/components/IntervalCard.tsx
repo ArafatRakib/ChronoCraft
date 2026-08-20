@@ -82,9 +82,10 @@ export const IntervalCard: React.FC<IntervalCardProps> = ({
   const safeRemainingMs = isNaN(currentRemaining) || currentRemaining < 0 ? 0 : currentRemaining;
   const time = formatTime(safeRemainingMs);
 
-  const phaseTheme = getColorTheme(currentPhase?.color || interval.color || 'rose');
-  const mainTheme = getColorTheme(interval.color || 'rose');
-
+    // Entire card theme drives off the active phase's color
+  const phaseTheme = getColorTheme(currentPhase?.color || 'rose');
+  const mainTheme = phaseTheme;
+  
   const progressRatio = currentPhaseDuration > 0 ? Math.max(0, Math.min(1, safeRemainingMs / currentPhaseDuration)) : 0;
   const strokeDashoffset = 283 * (1 - progressRatio);
 

@@ -170,22 +170,25 @@ export const CreateModal: React.FC<CreateModalProps> = ({
   // Interval Mode: 'quick' vs 'custom-builder'
   const [intervalMode, setIntervalMode] = useState<'quick' | 'builder'>('quick');
 
-  // Quick Interval settings
+    // Quick Interval settings
   const [intervalRounds, setIntervalRounds] = useState(8);
   const [workMinutes, setWorkMinutes] = useState(0);
   const [workSeconds, setWorkSeconds] = useState(20);
   const [workName, setWorkName] = useState('Work Sprint');
+  const [workColor, setWorkColor] = useState<ColorName>('rose');
 
   const [hasRest, setHasRest] = useState(true);
   const [restMinutes, setRestMinutes] = useState(0);
   const [restSeconds, setRestSeconds] = useState(10);
   const [restName, setRestName] = useState('Rest');
+  const [restColor, setRestColor] = useState<ColorName>('emerald');
 
   const [hasPrep, setHasPrep] = useState(true);
   const [prepMinutes, setPrepMinutes] = useState(0);
   const [prepSeconds, setPrepSeconds] = useState(5);
   const [prepName, setPrepName] = useState('Get Ready');
-
+  const [prepColor, setPrepColor] = useState<ColorName>('amber');
+  
   // Custom Multi-Phase Builder settings
   const [builderRounds, setBuilderRounds] = useState(3);
   const [builderPhases, setBuilderPhases] = useState<CustomPhaseItem[]>([
@@ -218,14 +221,17 @@ export const CreateModal: React.FC<CreateModalProps> = ({
       setWorkMinutes(0);
       setWorkSeconds(20);
       setWorkName('Work Sprint');
+      setWorkColor('rose');
       setHasRest(true);
       setRestMinutes(0);
       setRestSeconds(10);
       setRestName('Rest');
+      setRestColor('emerald');
       setHasPrep(true);
       setPrepMinutes(0);
       setPrepSeconds(5);
       setPrepName('Get Ready');
+      setPrepColor('amber');
     }
   }, [isOpen, initialType, defaultSound, defaultSoundRepeat]);
 
@@ -338,13 +344,13 @@ export const CreateModal: React.FC<CreateModalProps> = ({
           return;
         }
 
-        if (prepDurationMs > 0) {
+                if (prepDurationMs > 0) {
           phases.push({
             id: `phase-prep-${Date.now()}`,
             name: capitalizeWords(prepName.trim()) || 'Get Ready',
             durationMs: prepDurationMs,
             type: 'prepare',
-            color: 'amber',
+            color: prepColor || 'amber',
           });
         }
 
@@ -353,7 +359,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
           name: capitalizeWords(workName.trim()) || 'Work Sprint',
           durationMs: workDurationMs,
           type: 'work',
-          color: 'rose',
+          color: workColor || 'rose',
         });
 
         if (restDurationMs > 0) {
@@ -362,7 +368,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
             name: capitalizeWords(restName.trim()) || 'Rest',
             durationMs: restDurationMs,
             type: 'rest',
-            color: 'emerald',
+            color: restColor || 'emerald',
           });
         }
 
@@ -632,13 +638,28 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                     />
                   </div>
 
-                  {/* 1. Work / Active Phase */}
+                                    {/* 1. Work / Active Phase */}
                   <div className="p-3 rounded-xl bg-white dark:bg-slate-900/90 border border-rose-200 dark:border-rose-900/60 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
                         <Flame className="w-3.5 h-3.5" />
                         <span>Work / Active Phase</span>
                       </span>
+
+                      {/* Work Phase Color Swatches */}
+                      <div className="flex items-center gap-1">
+                        {COLOR_KEYS.slice(0, 5).map((k) => (
+                          <button
+                            key={k}
+                            type="button"
+                            onClick={() => setWorkColor(k)}
+                            className={`w-3.5 h-3.5 rounded-full transition-transform ${
+                              workColor === k ? 'ring-2 ring-indigo-500 scale-110' : 'opacity-70 hover:opacity-100'
+                            }`}
+                            style={{ backgroundColor: COLOR_THEMES[k].accentHex }}
+                          />
+                        ))}
+                      </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <input
