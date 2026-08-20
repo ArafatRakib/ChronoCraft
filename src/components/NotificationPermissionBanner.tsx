@@ -19,9 +19,12 @@ export const NotificationPermissionBanner: React.FC = () => {
     return null;
   }
 
-  const handleEnable = async () => {
+    const handleEnable = async () => {
     setIsActivating(true);
     try {
+      if (capacitorBridge.isNative()) {
+        await capacitorBridge.requestPermissions();
+      }
       const granted = await backgroundNotificationService.requestNotificationPermission();
       if (granted) {
         setPermission('granted');

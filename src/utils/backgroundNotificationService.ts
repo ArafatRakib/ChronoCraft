@@ -66,6 +66,7 @@ class BackgroundNotificationService {
   private isAudioPlaying = false;
   private isAudioUnlocked = false;
   private lastUpdateMs = 0;
+  private lastNotificationKey = '';
   private swRegistration: ServiceWorkerRegistration | null = null;
   private onPlayCallback: (() => void) | null = null;
   private onPauseCallback: (() => void) | null = null;
@@ -265,18 +266,46 @@ class BackgroundNotificationService {
       }
     }
 
-    // ------------------------------------------------------------------------
-    // ADD THIS CODE HERE: Update native ongoing Android notification shade
-    // ------------------------------------------------------------------------
+            // Native Android Chronometer Notification (Zero IPC re-posting, single timestamp push)
     if (primaryItem && anyRunning) {
-      if (capacitorBridge.isNative()) {
-        capacitorBridge.updateRunningNotification(
-          primaryItem.name,
-          `${primaryItem.formattedTime} • ${primaryItem.type.toUpperCase()}`
-        );
+      const notificationKey = `${primaryItem.id}:${primaryItem.name}:${primaryItem.type}`;
+
+      if (this.lastNotificationKey !== notificationKey) {
+        this.lastNotificationKey = notificationKey;
+        if (capacitorBridge.isNative()) {
+          // Calculate base timestamp for OS-level live counting
+          let baseTimeMs = Date.now();
+          let isCountDown = false;
+
+          if (primaryItem.type === 'timer') {
+            // Count down to target expiration time
+            const parts = primaryItem.formattedTime.split(':').map(Number);
+            const totalSec = parts.length === 3 
+              ? parts[0] * 3600 + parts[1] * 60 + parts[2]
+              : parts[0] * 60 + parts[1];
+            baseTimeMs = Date.now() + totalSec * 1000;
+            isCountDown = true;
+          } else {
+            // Count up from start time
+            const parts = primaryItem.formattedTime.split('.');
+            const mainParts = parts[0].split(':').map(Number);
+            const elapsedSec = mainParts.length === 3 
+              ? mainParts[0] * 3600 + mainParts[1] * 60 + mainParts[2]
+              : mainParts[0] * 60 + mainParts[1];
+            baseTimeMs = Date.now() - elapsedSec * 1000;
+            isCountDown = false;
+          }
+
+          capacitorBridge.updateRunningChronometer(primaryItem.name, baseTimeMs, isCountDown);
+        }
       }
-    } else if (!anyRunning && capacitorBridge.isNative()) {
-      capacitorBridge.clearRunningNotification();
+    } else if (!anyRunning) {
+      if (this.lastNotificationKey !== '') {
+        this.lastNotificationKey = '';
+        if (capacitorBridge.isNative()) {
+          capacitorBridge.clearRunningChronometer();
+        }
+      }
     }
     
     // 3. Document title synchronization

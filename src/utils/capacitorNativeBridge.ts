@@ -49,6 +49,7 @@ interface HapticsPlugin {
 // Safely register plugins via Capacitor core (avoids compile-time static bundle failures)
 const LocalNotifications = registerPlugin<LocalNotificationsPlugin>('LocalNotifications');
 const Haptics = registerPlugin<HapticsPlugin>('Haptics');
+const ChronometerNotification = registerPlugin<any>('ChronometerNotification');
 
 class CapacitorNativeBridge {
   private isInitialized = false;
@@ -57,9 +58,34 @@ class CapacitorNativeBridge {
     return typeof window !== 'undefined' && Capacitor.isNativePlatform();
   }
 
-  public isAndroid(): boolean {
+    public isAndroid(): boolean {
     return this.isNative() && Capacitor.getPlatform() === 'android';
   }
+
+  public async updateRunningChronometer(
+    title: string,
+    baseTimeMs: number,
+    isCountDown: boolean = false
+  ): Promise<void> {
+    if (!this.isNative()) return;
+    try {
+      await ChronometerNotification.showChronometer({
+        title,
+        baseTime: baseTimeMs,
+        isCountDown,
+      });
+    } catch (e) {
+      console.warn('Chronometer plugin error:', e);
+    }
+  }
+
+  public async clearRunningChronometer(): Promise<void> {
+    if (!this.isNative()) return;
+    try {
+      await ChronometerNotification.clearChronometer();
+    } catch {}
+  }
+
 
   /**
    * Initializes native Android notification channels with high-priority ALARM attributes
@@ -87,7 +113,7 @@ class CapacitorNativeBridge {
           id: ACTIVE_TIMER_CHANNEL_ID,
           name: 'Active Running Timers',
           description: 'Ongoing lock screen and notification shade display for running stopwatches and timers',
-          importance: 4, // IMPORTANCE_HIGH so it shows on lockscreen and status bar
+          importance: 2, // IMPORTANCE_HIGH so it shows on lockscreen and status bar
           visibility: 1, // VISIBILITY_PUBLIC
           vibration: false,
           lights: false,
