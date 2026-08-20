@@ -113,7 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Desktop Center Navigation Tabs */}
-          <nav className="hidden md:flex items-center gap-1 p-1 bg-slate-100/90 dark:bg-slate-800/90 rounded-xl border border-slate-200/70 dark:border-slate-700/70">
+<nav className="hidden lg:flex items-center gap-1 p-1 bg-slate-100/90 dark:bg-slate-800/90 rounded-xl border border-slate-200/70 dark:border-slate-700/70">
             <button
               onClick={() => onSelectTab('all')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
@@ -327,8 +327,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Mobile View Tab Switcher Sub-bar */}
-        <div className="flex items-center md:hidden py-1.5 border-t border-slate-200/60 dark:border-slate-800 text-xs font-semibold gap-1 overflow-x-auto scrollbar-none">
+        {/* Mobile/Tablet View Tab Switcher Sub-bar */}
+<div className="flex items-center lg:hidden py-1.5 border-t border-slate-200/60 dark:border-slate-800 text-xs font-semibold gap-1 overflow-x-auto scrollbar-none">
           <button
             onClick={() => onSelectTab('all')}
             className={`py-1 px-2.5 rounded-lg flex items-center justify-center gap-1 shrink-0 whitespace-nowrap transition-colors cursor-pointer ${

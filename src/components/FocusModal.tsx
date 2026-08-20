@@ -271,102 +271,104 @@ export const FocusModal: React.FC<FocusModalProps> = ({
               </div>
             </div>
           ) : (
-            <div className="relative flex flex-col items-center justify-center">
-              {/* Circular Ring for Timer, Interval, or Stopwatch with Target Goal */}
-              {(isTimer || isInterval || hasStopwatchTarget) && (
-                <svg className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 -rotate-90 mb-2" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="45" className="stroke-slate-200 dark:stroke-white/10 fill-none" strokeWidth="4" />
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="45"
-                    className="fill-none transition-all duration-300 ease-linear"
-                    strokeWidth="4"
-                    strokeDasharray="283"
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                    stroke={isStopwatchTargetReached ? '#10B981' : theme.accentHex}
-                  />
-                </svg>
+            <div className="flex flex-col items-center justify-center">
+              {/* Phase Name & Round Counter Placed OUTSIDE Above the Time Ring */}
+              {isInterval && currentPhase && (
+                <div className="mb-3 sm:mb-5 flex items-center gap-2">
+                  <span 
+                    className="px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md text-white"
+                    style={{ backgroundColor: theme.accentHex }}
+                  >
+                    {currentPhase.type === 'work' ? (
+                      <Flame className="w-4 h-4" />
+                    ) : (
+                      <Dumbbell className="w-4 h-4" />
+                    )}
+                    <span>{currentPhase.name}</span>
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-200/80 dark:bg-white/10 px-3 py-1 rounded-full border border-slate-300/50 dark:border-white/10">
+                    Round {currentRound} of {totalRounds}
+                  </span>
+                </div>
               )}
 
-              <div className={`${isTimer || isInterval || hasStopwatchTarget ? 'absolute inset-0 flex flex-col items-center justify-center' : ''}`}>
-                {/* Interval Phase Badge */}
-                {isInterval && currentPhase && (
-                  <div className="mb-2 sm:mb-4 flex items-center gap-2">
-                    <span 
-                      className="px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md text-white"
-                      style={{ backgroundColor: theme.accentHex }}
-                    >
-                      {currentPhase.type === 'work' ? (
-                        <Flame className="w-4 h-4" />
-                      ) : (
-                        <Dumbbell className="w-4 h-4" />
-                      )}
-                      <span>{currentPhase.name}</span>
-                    </span>
-                    <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-200/80 dark:bg-white/10 px-3 py-1 rounded-full">
-                      Round {currentRound} of {totalRounds}
-                    </span>
-                  </div>
+              {/* Time Ring & Clock Digits Container */}
+              <div className="relative flex flex-col items-center justify-center">
+                {(isTimer || isInterval || hasStopwatchTarget) && (
+                  <svg className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 -rotate-90 mb-2" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" className="stroke-slate-200 dark:stroke-white/10 fill-none" strokeWidth="4" />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      className="fill-none transition-all duration-300 ease-linear"
+                      strokeWidth="4"
+                      strokeDasharray="283"
+                      strokeDashoffset={strokeDashoffset}
+                      strokeLinecap="round"
+                      stroke={isStopwatchTargetReached ? '#10B981' : theme.accentHex}
+                    />
+                  </svg>
                 )}
 
-                {/* Timer Duration Badge */}
-                {isTimer && timerDurationFormatted && (
-                  <div className="mb-2 sm:mb-4 flex items-center justify-center gap-1.5 px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold tracking-wide shadow-sm text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-white/10 border border-slate-300/60 dark:border-white/15">
-                    <Clock className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-                    <span>Set for {parseInt(timerDurationFormatted.hours, 10) > 0 && `${timerDurationFormatted.hours}:`}{timerDurationFormatted.minutes}:{timerDurationFormatted.seconds}</span>
-                  </div>
-                )}
+                <div className={`${isTimer || isInterval || hasStopwatchTarget ? 'absolute inset-0 flex flex-col items-center justify-center' : ''}`}>
+                  {/* Timer Duration Badge */}
+                  {isTimer && timerDurationFormatted && (
+                    <div className="mb-2 sm:mb-4 flex items-center justify-center gap-1.5 px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold tracking-wide shadow-sm text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-white/10 border border-slate-300/60 dark:border-white/15">
+                      <Clock className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+                      <span>Set for {parseInt(timerDurationFormatted.hours, 10) > 0 && `${timerDurationFormatted.hours}:`}{timerDurationFormatted.minutes}:{timerDurationFormatted.seconds}</span>
+                    </div>
+                  )}
 
-                {/* Stopwatch Target Goal Badge */}
-                {hasStopwatchTarget && targetFormatted && (
-                  <div className={`mb-2 sm:mb-4 flex items-center justify-center gap-2 px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold tracking-wide shadow-sm border ${
-                    isStopwatchTargetReached
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-400 dark:border-emerald-700'
-                      : 'text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-white/10 border-slate-300/60 dark:border-white/15'
-                  }`}>
-                    <Target className={`w-3.5 h-3.5 ${isStopwatchTargetReached ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-500 dark:text-indigo-400'}`} />
-                    <span>
-                      Target: {parseInt(targetFormatted.hours, 10) > 0 && `${targetFormatted.hours}:`}{targetFormatted.minutes}:{targetFormatted.seconds}
-                    </span>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
+                  {/* Stopwatch Target Goal Badge */}
+                  {hasStopwatchTarget && targetFormatted && (
+                    <div className={`mb-2 sm:mb-4 flex items-center justify-center gap-2 px-3.5 py-1 rounded-full text-xs sm:text-sm font-bold tracking-wide shadow-sm border ${
                       isStopwatchTargetReached
-                        ? 'bg-emerald-600 text-white dark:bg-emerald-500'
-                        : 'bg-slate-300 dark:bg-white/15 text-slate-800 dark:text-slate-200'
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-400 dark:border-emerald-700'
+                        : 'text-slate-700 dark:text-slate-200 bg-slate-200/80 dark:bg-white/10 border-slate-300/60 dark:border-white/15'
                     }`}>
-                      {isStopwatchTargetReached ? 'Goal Reached! 🎉' : `${targetPercent}%`}
-                    </span>
+                      <Target className={`w-3.5 h-3.5 ${isStopwatchTargetReached ? 'text-emerald-600 dark:text-emerald-400' : 'text-indigo-500 dark:text-indigo-400'}`} />
+                      <span>
+                        Target: {parseInt(targetFormatted.hours, 10) > 0 && `${targetFormatted.hours}:`}{targetFormatted.minutes}:{targetFormatted.seconds}
+                      </span>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
+                        isStopwatchTargetReached
+                          ? 'bg-emerald-600 text-white dark:bg-emerald-500'
+                          : 'bg-slate-300 dark:bg-white/15 text-slate-800 dark:text-slate-200'
+                      }`}>
+                        {isStopwatchTargetReached ? 'Goal Reached! 🎉' : `${targetPercent}%`}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Big Digits */}
+                  <div className="inline-flex items-baseline font-mono tracking-tighter font-extrabold text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-slate-900 dark:text-white">
+                    {parseInt(time.hours, 10) > 0 && (
+                      <>
+                        <span>{time.hours}</span>
+                        <span className="text-slate-400 dark:text-slate-500 mx-1">:</span>
+                      </>
+                    )}
+                    <span>{time.minutes}</span>
+                    <span className="text-slate-400 dark:text-slate-500 mx-0.5 sm:mx-1">:</span>
+                    <span>{time.seconds}</span>
+                    {isStopwatch && (
+                      <span className="text-2xl sm:text-4xl md:text-5xl text-slate-500 dark:text-slate-400 font-bold ml-1.5 sm:ml-2">
+                        .{time.centiseconds}
+                      </span>
+                    )}
                   </div>
-                )}
 
-                {/* Big Digits */}
-                <div className="inline-flex items-baseline font-mono tracking-tighter font-extrabold text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-slate-900 dark:text-white">
-                  {parseInt(time.hours, 10) > 0 && (
-                    <>
-                      <span>{time.hours}</span>
-                      <span className="text-slate-400 dark:text-slate-500 mx-1">:</span>
-                    </>
-                  )}
-                  <span>{time.minutes}</span>
-                  <span className="text-slate-400 dark:text-slate-500 mx-0.5 sm:mx-1">:</span>
-                  <span>{time.seconds}</span>
-                  {isStopwatch && (
-                    <span className="text-2xl sm:text-4xl md:text-5xl text-slate-500 dark:text-slate-400 font-bold ml-1.5 sm:ml-2">
-                      .{time.centiseconds}
-                    </span>
-                  )}
-                </div>
-
-                {/* Status or Next Phase info */}
-                <div className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-2 sm:mt-4 tracking-widest uppercase flex items-center justify-center gap-2">
-                  <span className={`w-2.5 h-2.5 rounded-full ${item.isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400 dark:bg-slate-600'}`} />
-                  <span>{item.isRunning ? 'Active' : 'Paused'}</span>
-                  {isInterval && nextPhase && (
-                    <span className="normal-case text-slate-500 dark:text-slate-400 font-sans ml-2">
-                      (Next: {nextPhase.name})
-                    </span>
-                  )}
+                  {/* Status or Next Phase info */}
+                  <div className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-2 sm:mt-4 tracking-widest uppercase flex items-center justify-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${item.isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400 dark:bg-slate-600'}`} />
+                    <span>{item.isRunning ? 'Active' : 'Paused'}</span>
+                    {isInterval && nextPhase && (
+                      <span className="normal-case text-slate-500 dark:text-slate-400 font-sans ml-2">
+                        (Next: {nextPhase.name})
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
