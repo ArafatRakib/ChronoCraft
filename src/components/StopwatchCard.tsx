@@ -164,6 +164,10 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
 
   const theme = getColorTheme(stopwatch.color);
   const time = formatTime(elapsedMs);
+  // Compute live current lap time
+  const previousLapsTotalMs = stopwatch.laps.reduce((acc, lap) => acc + lap.lapTime, 0);
+  const currentLapMs = Math.max(0, elapsedMs - previousLapsTotalMs);
+  const currentLapTime = formatTime(currentLapMs);
 
   const handleSaveName = () => {
     const formatted = capitalizeWords(nameInput);
@@ -534,19 +538,32 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
           </span>
         </div>
 
-        {/* Status Indicator */}
-        <div className="flex items-center justify-center gap-1 mt-0.5 text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
-          <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${stopwatch.isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} />
-          <span>{stopwatch.isRunning ? 'Running' : elapsedMs > 0 ? 'Paused' : 'Ready'}</span>
+                {/* Live Lap Time & Status Indicator */}
+        <div className="flex flex-col items-center justify-center gap-0.5 mt-1">
           {stopwatch.laps.length > 0 && (
-            <button
-              onClick={() => onOpenAnalytics && onOpenAnalytics(stopwatch.id)}
-              className="ml-1 text-indigo-600 dark:text-indigo-400 hover:underline font-semibold flex items-center gap-0.5"
-            >
-              <span>({stopwatch.laps.length} Laps)</span>
-            </button>
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] sm:text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 border border-slate-200/60 dark:border-slate-700/60">
+              <span className="text-[10px] font-sans font-semibold text-slate-400 uppercase tracking-wider">Lap {stopwatch.laps.length + 1}:</span>
+              <span>
+                {parseInt(currentLapTime.hours, 10) > 0 && `${currentLapTime.hours}:`}
+                {currentLapTime.minutes}:{currentLapTime.seconds}.{currentLapTime.centiseconds}
+              </span>
+            </div>
           )}
+
+          <div className="flex items-center justify-center gap-1 text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
+            <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${stopwatch.isRunning ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} />
+            <span>{stopwatch.isRunning ? 'Running' : elapsedMs > 0 ? 'Paused' : 'Ready'}</span>
+            {stopwatch.laps.length > 0 && (
+              <button
+                onClick={() => onOpenAnalytics && onOpenAnalytics(stopwatch.id)}
+                className="ml-1 text-indigo-600 dark:text-indigo-400 hover:underline font-semibold flex items-center gap-0.5"
+              >
+                <span>({stopwatch.laps.length} Laps)</span>
+              </button>
+            )}
+          </div>
         </div>
+        
       </div>
 
       {/* Control Buttons */}

@@ -168,6 +168,11 @@ export const FocusModal: React.FC<FocusModalProps> = ({
   const time = formatTime(displayMs);
   const timerDurationFormatted = isTimer && timer ? formatTime(timer.duration) : null;
 
+  // Compute live current lap time for stopwatch in Focus Mode
+  const previousLapsTotalMs = stopwatch?.laps?.reduce((acc, lap) => acc + lap.lapTime, 0) || 0;
+  const currentLapMs = isStopwatch ? Math.max(0, elapsedMs - previousLapsTotalMs) : 0;
+  const currentLapTime = formatTime(currentLapMs);
+
   // Stopwatch Target Goal state
   const stopwatchTargetMs = stopwatch?.targetGoalMs || 0;
   const hasStopwatchTarget = isStopwatch && stopwatchTargetMs > 0;
@@ -341,7 +346,7 @@ export const FocusModal: React.FC<FocusModalProps> = ({
                     </div>
                   )}
 
-                  {/* Big Digits */}
+                                    {/* Big Digits */}
                   <div className="inline-flex items-baseline font-mono tracking-tighter font-extrabold text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-slate-900 dark:text-white">
                     {parseInt(time.hours, 10) > 0 && (
                       <>
@@ -358,6 +363,19 @@ export const FocusModal: React.FC<FocusModalProps> = ({
                       </span>
                     )}
                   </div>
+
+                  {/* Live Current Lap Time Display in Focus Mode */}
+                  {isStopwatch && stopwatch && stopwatch.laps.length > 0 && (
+                    <div className="mt-2 flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full bg-slate-100 dark:bg-white/10 text-xs sm:text-sm font-mono font-bold text-indigo-600 dark:text-indigo-300 border border-slate-200 dark:border-white/10">
+                      <span className="text-[10px] sm:text-xs font-sans font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
+                        Current Lap #{stopwatch.laps.length + 1}:
+                      </span>
+                      <span>
+                        {parseInt(currentLapTime.hours, 10) > 0 && `${currentLapTime.hours}:`}
+                        {currentLapTime.minutes}:{currentLapTime.seconds}.{currentLapTime.centiseconds}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Status or Next Phase info */}
                   <div className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-2 sm:mt-4 tracking-widest uppercase flex items-center justify-center gap-2">
