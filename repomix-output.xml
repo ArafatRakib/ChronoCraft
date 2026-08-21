@@ -1718,113 +1718,6 @@ APP_URL="MY_APP_URL"
 }
 </file>
 
-<file path="android/app/src/main/java/com/arafat/chrono/MainActivity.java">
-package com.arafat.chrono;
-
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.content.Context;
-import android.os.Build;
-import android.os.Bundle;
-import com.getcapacitor.BridgeActivity;
-import com.getcapacitor.Plugin;
-import com.getcapacitor.PluginCall;
-import com.getcapacitor.PluginMethod;
-import com.getcapacitor.annotation.CapacitorPlugin;
-
-public class MainActivity extends BridgeActivity {
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        registerPlugin(ChronometerNotificationPlugin.class);
-        super.onCreate(savedInstanceState);
-    }
-
-    @CapacitorPlugin(name = "ChronometerNotification")
-    public static class ChronometerNotificationPlugin extends Plugin {
-
-        private static final String CHANNEL_ID = "chronocraft_active_timer_channel";
-
-        @PluginMethod
-        public void showChronometer(PluginCall call) {
-            String idStr = call.getString("id", "888888");
-            String title = call.getString("title", "ChronoCraft");
-            String text = call.getString("text", "Active clock running in background");
-            long baseTime = call.getLong("baseTime", System.currentTimeMillis());
-            boolean isCountDown = call.getBoolean("isCountDown", false);
-
-            int notificationId = Math.abs(idStr.hashCode());
-
-            Context context = getContext();
-            NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Active Running Timers",
-                    NotificationManager.IMPORTANCE_LOW
-                );
-                channel.setDescription("Silent ongoing lock screen display for active clocks");
-                channel.setShowBadge(false);
-                if (manager != null) {
-                    manager.createNotificationChannel(channel);
-                }
-            }
-
-            Notification.Builder builder;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                builder = new Notification.Builder(context, CHANNEL_ID);
-            } else {
-                builder = new Notification.Builder(context);
-            }
-
-            int appIcon = context.getApplicationInfo().icon != 0 
-                ? context.getApplicationInfo().icon 
-                : android.R.drawable.ic_dialog_info;
-
-                        builder.setContentTitle(title)
-                   .setContentText(text)
-                   .setSmallIcon(appIcon)
-                   .setOngoing(true)
-                   .setOnlyAlertOnce(true)
-                   .setCategory(Notification.CATEGORY_SERVICE)
-                          .setVisibility(Notification.VISIBILITY_PUBLIC);
-
-
-            // Attach live chronometer if baseTime is provided
-            if (baseTime > 0) {
-                builder.setUsesChronometer(true).setWhen(baseTime);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    builder.setChronometerCountDown(isCountDown);
-                }
-            }
-
-            if (manager != null) {
-                manager.notify(notificationId, builder.build());
-            }
-            call.resolve();
-        }
-
-        @PluginMethod
-        public void clearChronometer(PluginCall call) {
-            String idStr = call.getString("id", "888888");
-            boolean clearAll = call.getBoolean("clearAll", false);
-            NotificationManager manager = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
-
-            if (manager != null) {
-                if (clearAll) {
-                    manager.cancelAll();
-                } else {
-                    int notificationId = Math.abs(idStr.hashCode());
-                    manager.cancel(notificationId);
-                }
-            }
-            call.resolve();
-        }
-    }
-}
-</file>
-
 <file path="android/app/src/main/AndroidManifest.xml">
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -2831,172 +2724,6 @@ export const TIMER_PRESETS: TimerPreset[] = [
 ];
 </file>
 
-<file path="src/utils/speech.ts">
-import { TextToSpeech } from '@capacitor-community/text-to-speech';
-import { capacitorBridge } from './capacitorNativeBridge';
-
-/**
- * Speech synthesis manager for voice cues & progress announcements
- * Uses @capacitor-community/text-to-speech for Native Android and falls back to Web Speech Synthesis.
- */
-class SpeechAssistant {
-  private isSupported: boolean = false;
-  private voice: SpeechSynthesisVoice | null = null;
-  private enabled: boolean = true;
-  private currentUtterance: SpeechSynthesisUtterance | null = null;
-
-  constructor() {
-    if (typeof window !== 'undefined') {
-      this.isSupported = 'speechSynthesis' in window || capacitorBridge.isNative();
-      if ('speechSynthesis' in window) {
-        this.initVoice();
-        if (window.speechSynthesis.onvoiceschanged !== undefined) {
-          window.speechSynthesis.onvoiceschanged = () => this.initVoice();
-        }
-
-        // Unlock Web Audio / Speech Synthesis on user interaction
-        const unlock = () => {
-          try {
-            if (window.speechSynthesis.paused) {
-              window.speechSynthesis.resume();
-            }
-          } catch {}
-          window.removeEventListener('click', unlock);
-          window.removeEventListener('touchstart', unlock);
-        };
-        window.addEventListener('click', unlock, { once: true });
-        window.addEventListener('touchstart', unlock, { once: true });
-      }
-    }
-  }
-
-  private initVoice() {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    try {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices && voices.length > 0) {
-        this.voice =
-          voices.find(
-            (v) =>
-              v.lang.startsWith('en') &&
-              (v.name.includes('Natural') ||
-                v.name.includes('Google') ||
-                v.name.includes('Samantha') ||
-                v.name.includes('English'))
-          ) ||
-          voices.find((v) => v.lang.startsWith('en')) ||
-          voices[0] ||
-          null;
-      }
-    } catch {}
-  }
-
-  public setEnabled(enabled: boolean) {
-    this.enabled = enabled;
-  }
-
-  public isVoiceEnabled(): boolean {
-    return this.enabled;
-  }
-
-  public async speak(text: string, priority: boolean = false) {
-    if (!this.enabled) return;
-
-    // 1. Try Native Android TTS via Capacitor
-    if (capacitorBridge.isNative()) {
-      try {
-        if (priority) {
-          await TextToSpeech.stop().catch(() => {});
-        }
-                await TextToSpeech.speak({
-          text,
-          lang: 'en-US',
-          rate: 1.0,
-          pitch: 1.0,
-          volume: 1.0,
-        });
-        return;
-      } catch {
-        // Fallback to web speech
-      }
-    }
-
-    // 2. Web Speech Synthesis API
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      try {
-        if (window.speechSynthesis.paused) {
-          window.speechSynthesis.resume();
-        }
-        if (priority) {
-          window.speechSynthesis.cancel();
-        }
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        if (!this.voice) {
-          this.initVoice();
-        }
-        if (this.voice) {
-          utterance.voice = this.voice;
-        }
-        utterance.rate = 1.05;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-
-        // Retain utterance reference to avoid Android WebView GC drop
-        this.currentUtterance = utterance;
-        utterance.onend = () => {
-          this.currentUtterance = null;
-        };
-        utterance.onerror = () => {
-          this.currentUtterance = null;
-        };
-
-        window.speechSynthesis.speak(utterance);
-      } catch {
-        // Fallback gracefully
-      }
-    }
-  }
-
-  public testVoice() {
-    this.speak('Voice cues are active and ready.', true);
-  }
-
-  public announcePhase(phaseName: string, round: number, totalRounds: number) {
-    this.speak(`${phaseName}! Round ${round} of ${totalRounds}.`, true);
-  }
-
-  public announceCountdown(seconds: number) {
-    this.speak(`${seconds}`, true);
-  }
-
-  public announceHalfway(timerName: string) {
-    this.speak(`Halfway through ${timerName}.`, false);
-  }
-
-    public announceTimerFinished(timerName: string) {
-    // Strip leading "0m " or "0h " so TTS speaks "30s Timer" instead of "0m 30s Timer"
-    const cleanName = timerName.replace(/^0[hm]\s+/i, '');
-    this.speak(`Time is up for ${cleanName}!`, true);
-  }
-
-
-  public cancel() {
-    if (capacitorBridge.isNative()) {
-      TextToSpeech.stop().catch(() => {});
-    }
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      try {
-        window.speechSynthesis.cancel();
-      } catch {}
-    }
-  }
-}
-
-export const speechAssistant = new SpeechAssistant();
-export const speechManager = speechAssistant;
-</file>
-
 <file path="src/utils/timeFormatter.ts">
 export interface FormattedTime {
   hours: string;
@@ -3150,6 +2877,113 @@ android/captures/
 android/.idea/
 keystore_base64.txt
 release.keystore
+</file>
+
+<file path="android/app/src/main/java/com/arafat/chrono/MainActivity.java">
+package com.arafat.chrono;
+
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.os.Build;
+import android.os.Bundle;
+import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(ChronometerNotificationPlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+
+    @CapacitorPlugin(name = "ChronometerNotification")
+    public static class ChronometerNotificationPlugin extends Plugin {
+
+        private static final String CHANNEL_ID = "chronocraft_active_timer_channel";
+
+        @PluginMethod
+        public void showChronometer(PluginCall call) {
+            String idStr = call.getString("id", "888888");
+            String title = call.getString("title", "ChronoCraft");
+            String text = call.getString("text", "Active clock running in background");
+            long baseTime = call.getLong("baseTime", System.currentTimeMillis());
+            boolean isCountDown = call.getBoolean("isCountDown", false);
+
+            int notificationId = Math.abs(idStr.hashCode());
+
+            Context context = getContext();
+            NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Active Running Timers",
+                    NotificationManager.IMPORTANCE_LOW
+                );
+                channel.setDescription("Silent ongoing lock screen display for active clocks");
+                channel.setShowBadge(false);
+                if (manager != null) {
+                    manager.createNotificationChannel(channel);
+                }
+            }
+
+            Notification.Builder builder;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                builder = new Notification.Builder(context, CHANNEL_ID);
+            } else {
+                builder = new Notification.Builder(context);
+            }
+
+            int appIcon = context.getApplicationInfo().icon != 0 
+                ? context.getApplicationInfo().icon 
+                : android.R.drawable.ic_dialog_info;
+
+                        builder.setContentTitle(title)
+                   .setContentText(text)
+                   .setSmallIcon(appIcon)
+                   .setOngoing(true)
+                   .setOnlyAlertOnce(true)
+                   .setCategory(Notification.CATEGORY_SERVICE)
+                          .setVisibility(Notification.VISIBILITY_PUBLIC);
+
+
+            // Attach live chronometer if baseTime is provided
+            if (baseTime > 0) {
+                builder.setUsesChronometer(true).setWhen(baseTime);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    builder.setChronometerCountDown(isCountDown);
+                }
+            }
+
+            if (manager != null) {
+                manager.notify(notificationId, builder.build());
+            }
+            call.resolve();
+        }
+
+        @PluginMethod
+        public void clearChronometer(PluginCall call) {
+            String idStr = call.getString("id", "888888");
+            boolean clearAll = call.getBoolean("clearAll", false);
+            NotificationManager manager = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
+
+            if (manager != null) {
+                if (clearAll) {
+                    manager.cancelAll();
+                } else {
+                    int notificationId = Math.abs(idStr.hashCode());
+                    manager.cancel(notificationId);
+                }
+            }
+            call.resolve();
+        }
+    }
+}
 </file>
 
 <file path="android/capacitor.settings.gradle">
@@ -3745,6 +3579,196 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     </div>
   );
 };
+</file>
+
+<file path="src/utils/speech.ts">
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { capacitorBridge } from './capacitorNativeBridge';
+
+/**
+ * Expands abbreviated time units for TTS (e.g. "0m 30s Timer" -> "30 seconds Timer")
+ * Prevents TTS from pronouncing "m" as "meters" and "s" as "south".
+ */
+function sanitizeTextForSpeech(text: string): string {
+  if (!text) return '';
+  
+  return text
+    // 1. Remove 0m / 0h prefixes
+    .replace(/^0[hm]\s+/i, '')
+    .replace(/\b0[hm]\s+/i, '')
+    // 2. Expand hour abbreviations
+    .replace(/\b1\s*h\b/gi, '1 hour')
+    .replace(/(\d+)\s*h\b/gi, '$1 hours')
+    // 3. Expand minute abbreviations
+    .replace(/\b1\s*m\b/gi, '1 minute')
+    .replace(/(\d+)\s*m\b/gi, '$1 minutes')
+    // 4. Expand second abbreviations
+    .replace(/\b1\s*s\b/gi, '1 second')
+    .replace(/(\d+)\s*s\b/gi, '$1 seconds');
+}
+
+
+/**
+ * Speech synthesis manager for voice cues & progress announcements
+ * Uses @capacitor-community/text-to-speech for Native Android and falls back to Web Speech Synthesis.
+ */
+class SpeechAssistant {
+  private isSupported: boolean = false;
+  private voice: SpeechSynthesisVoice | null = null;
+  private enabled: boolean = true;
+  private currentUtterance: SpeechSynthesisUtterance | null = null;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      this.isSupported = 'speechSynthesis' in window || capacitorBridge.isNative();
+      if ('speechSynthesis' in window) {
+        this.initVoice();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+          window.speechSynthesis.onvoiceschanged = () => this.initVoice();
+        }
+
+        // Unlock Web Audio / Speech Synthesis on user interaction
+        const unlock = () => {
+          try {
+            if (window.speechSynthesis.paused) {
+              window.speechSynthesis.resume();
+            }
+          } catch {}
+          window.removeEventListener('click', unlock);
+          window.removeEventListener('touchstart', unlock);
+        };
+        window.addEventListener('click', unlock, { once: true });
+        window.addEventListener('touchstart', unlock, { once: true });
+      }
+    }
+  }
+
+  private initVoice() {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        this.voice =
+          voices.find(
+            (v) =>
+              v.lang.startsWith('en') &&
+              (v.name.includes('Natural') ||
+                v.name.includes('Google') ||
+                v.name.includes('Samantha') ||
+                v.name.includes('English'))
+          ) ||
+          voices.find((v) => v.lang.startsWith('en')) ||
+          voices[0] ||
+          null;
+      }
+    } catch {}
+  }
+
+  public setEnabled(enabled: boolean) {
+    this.enabled = enabled;
+  }
+
+  public isVoiceEnabled(): boolean {
+    return this.enabled;
+  }
+
+    public async speak(text: string, priority: boolean = false) {
+    if (!this.enabled) return;
+
+    // Expand all abbreviations (e.g. "10s" -> "10 seconds", "5m" -> "5 minutes")
+    const spokenText = sanitizeTextForSpeech(text);
+
+    // 1. Try Native Android TTS via Capacitor
+    if (capacitorBridge.isNative()) {
+      try {
+        if (priority) {
+          await TextToSpeech.stop().catch(() => {});
+        }
+        await TextToSpeech.speak({
+          text: spokenText,
+          lang: 'en-US',
+          rate: 1.0,
+          pitch: 1.0,
+          volume: 1.0,
+        });
+        return;
+      } catch (err) {
+        console.warn('Native TTS failed, falling back to Web Speech:', err);
+      }
+    }
+
+    // 2. Web Speech Synthesis API Fallback
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+        if (priority) {
+          window.speechSynthesis.cancel();
+        }
+
+        const utterance = new SpeechSynthesisUtterance(spokenText);
+        if (!this.voice) {
+          this.initVoice();
+        }
+        if (this.voice) {
+          utterance.voice = this.voice;
+        }
+        utterance.rate = 1.05;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        this.currentUtterance = utterance;
+        utterance.onend = () => {
+          this.currentUtterance = null;
+        };
+        utterance.onerror = () => {
+          this.currentUtterance = null;
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        console.warn('Web Speech API error:', e);
+      }
+    }
+    }
+
+  public testVoice() {
+    this.speak('Voice cues are active and ready.', true);
+  }
+
+  public announcePhase(phaseName: string, round: number, totalRounds: number) {
+    this.speak(`${phaseName}! Round ${round} of ${totalRounds}.`, true);
+  }
+
+  public announceCountdown(seconds: number) {
+    this.speak(`${seconds}`, true);
+  }
+
+    public announceHalfway(timerName: string) {
+    const cleanName = sanitizeTextForSpeech(timerName);
+    this.speak(`Halfway through ${cleanName}.`, false);
+  }
+
+  public announceTimerFinished(timerName: string) {
+    const cleanName = sanitizeTextForSpeech(timerName);
+    this.speak(`Time is up for ${cleanName}!`, true);
+  }
+
+  public cancel() {
+    if (capacitorBridge.isNative()) {
+      TextToSpeech.stop().catch(() => {});
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {}
+    }
+  }
+}
+
+export const speechAssistant = new SpeechAssistant();
+export const speechManager = speechAssistant;
 </file>
 
 <file path="index.html">
@@ -5085,322 +5109,6 @@ class SoundEngine {
 export const soundEngine = new SoundEngine();
 </file>
 
-<file path="src/utils/capacitorNativeBridge.ts">
-import { Capacitor, registerPlugin } from '@capacitor/core';
-
-export const ALARM_CHANNEL_ID = 'chronocraft_alarm_channel';
-export const ACTIVE_TIMER_CHANNEL_ID = 'chronocraft_active_timer_channel';
-export const RUNNING_NOTIFICATION_ID = 888888;
-
-// Define typed interfaces for Capacitor Native Plugins
-export interface LocalNotificationSchema {
-  id: number;
-  title: string;
-  body: string;
-  schedule?: {
-    at?: Date;
-    allowWhileIdle?: boolean;
-  };
-  channelId?: string;
-  actionTypeId?: string;
-  ongoing?: boolean;
-  autoCancel?: boolean;
-  extra?: Record<string, any>;
-  sound?: string;
-}
-
-export interface ChannelSchema {
-  id: string;
-  name: string;
-  description?: string;
-  importance: number;
-  visibility?: number;
-  vibration?: boolean;
-  lights?: boolean;
-  lightColor?: string;
-  sound?: string;
-}
-
-interface LocalNotificationsPlugin {
-  createChannel(channel: ChannelSchema): Promise<void>;
-  requestPermissions(): Promise<{ display: string }>;
-  schedule(options: { notifications: LocalNotificationSchema[] }): Promise<void>;
-  cancel(options: { notifications: { id: number }[] }): Promise<void>;
-}
-
-interface HapticsPlugin {
-  impact(options: { style: 'HEAVY' | 'MEDIUM' | 'LIGHT' }): Promise<void>;
-  notification(options: { type: 'SUCCESS' | 'WARNING' | 'ERROR' }): Promise<void>;
-  vibrate(options?: { duration?: number }): Promise<void>;
-}
-
-// Safely register plugins via Capacitor core (avoids compile-time static bundle failures)
-const LocalNotifications = registerPlugin<LocalNotificationsPlugin>('LocalNotifications');
-const Haptics = registerPlugin<HapticsPlugin>('Haptics');
-const ChronometerNotification = registerPlugin<any>('ChronometerNotification');
-
-class CapacitorNativeBridge {
-  private isInitialized = false;
-
-  public isNative(): boolean {
-    return typeof window !== 'undefined' && Capacitor.isNativePlatform();
-  }
-
-    public isAndroid(): boolean {
-    return this.isNative() && Capacitor.getPlatform() === 'android';
-  }
-
-    public async updateRunningChronometer(
-    id: string,
-    title: string,
-    text: string,
-    baseTimeMs: number = 0,
-    isCountDown: boolean = false
-  ): Promise<void> {
-    if (!this.isNative()) return;
-    try {
-      await ChronometerNotification.showChronometer({
-        id,
-        title,
-        text,
-        baseTime: baseTimeMs,
-        isCountDown,
-      });
-    } catch (e) {
-      console.warn('Chronometer plugin error:', e);
-    }
-  }
-
-  public async clearRunningChronometer(id?: string, clearAll: boolean = false): Promise<void> {
-    if (!this.isNative()) return;
-    try {
-      await ChronometerNotification.clearChronometer({
-        id: id || '888888',
-        clearAll,
-      });
-    } catch {}
-  }
-
-  /**
-   * Initializes native Android notification channels with high-priority ALARM attributes
-   */
-  public async initialize(): Promise<void> {
-    if (!this.isNative() || this.isInitialized) return;
-
-    try {
-      if (this.isAndroid()) {
-        // 1. High priority Alarm Channel (Importance 5 = IMPORTANCE_HIGH/MAX, bypasses silent/DND mode)
-        const alarmChannel: ChannelSchema = {
-          id: ALARM_CHANNEL_ID,
-          name: 'Timer & Workout Alarms',
-          description: 'High-priority alert channel that plays alarm sound and vibrates on timer completion',
-          importance: 5, // MAX importance in Android
-          visibility: 1, // VISIBILITY_PUBLIC (shows on lock screen)
-          vibration: true,
-          lights: true,
-          lightColor: '#EF4444',
-          sound: 'alarm.wav',
-        };
-
-        // 2. Active Running Timer Channel (Persistent ongoing notification)
-        const activeChannel: ChannelSchema = {
-          id: ACTIVE_TIMER_CHANNEL_ID,
-          name: 'Active Running Timers',
-          description: 'Ongoing lock screen and notification shade display for running stopwatches and timers',
-          importance: 2, // IMPORTANCE_HIGH so it shows on lockscreen and status bar
-          visibility: 1, // VISIBILITY_PUBLIC
-          vibration: false,
-          lights: false,
-        };
-
-        await LocalNotifications.createChannel(alarmChannel).catch(() => {});
-        await LocalNotifications.createChannel(activeChannel).catch(() => {});
-      }
-
-      this.isInitialized = true;
-    } catch (e) {
-      console.warn('Capacitor native bridge initialization note:', e);
-    }
-  }
-
-  /**
-   * Requests native notification permissions from Android OS
-   */
-  public async requestPermissions(): Promise<boolean> {
-    if (!this.isNative()) return false;
-
-    try {
-      const res = await LocalNotifications.requestPermissions();
-      await this.initialize();
-      return res.display === 'granted';
-    } catch (e) {
-      console.warn('Native permission request note:', e);
-      return false;
-    }
-  }
-
-  /**
-   * Updates an ongoing native Android notification for active running stopwatches, timers, or HIIT workouts.
-   * Keeps the live timer visible in the Android notification shade and lock screen.
-   */
-  public async updateRunningNotification(title: string, body: string): Promise<void> {
-    if (!this.isNative()) return;
-
-    try {
-      await this.initialize();
-      // Directly notify without AlarmManager schedule delay for instantaneous live updates
-      await LocalNotifications.schedule({
-        notifications: [
-          {
-            id: RUNNING_NOTIFICATION_ID,
-            title,
-            body,
-            channelId: ACTIVE_TIMER_CHANNEL_ID,
-            ongoing: true,
-            autoCancel: false,
-            actionTypeId: 'OPEN_APP',
-            extra: {
-              type: 'active_running_timer',
-            },
-          },
-        ],
-      });
-    } catch (e) {
-      console.warn('Native running notification note:', e);
-    }
-  }
-
-  /**
-   * Clears the ongoing running notification when all items are paused or reset
-   */
-  public async clearRunningNotification(): Promise<void> {
-    if (!this.isNative()) return;
-
-    try {
-      await LocalNotifications.cancel({
-        notifications: [{ id: RUNNING_NOTIFICATION_ID }],
-      });
-    } catch (e) {
-      console.warn('Native clear running notification note:', e);
-    }
-  }
-
-  /**
-   * Schedules an exact native Android background alarm for when a timer finishes.
-   * Uses Android AlarmManager (allowWhileIdle: true) so it fires even if the app is closed or in Doze mode.
-   */
-  public async scheduleAlarm(
-    numericId: number,
-    title: string,
-    body: string,
-    triggerDate: Date
-  ): Promise<void> {
-    if (!this.isNative()) return;
-
-    try {
-      await this.initialize();
-      // Ensure any previous alarm for this ID is removed first
-      await this.cancelAlarm(numericId);
-
-      await LocalNotifications.schedule({
-        notifications: [
-          {
-            id: numericId,
-            title: `⏰ ${title}`,
-            body,
-            schedule: {
-              at: triggerDate,
-              allowWhileIdle: true, // Wakes Android CPU from Doze mode (Exact Alarm)
-            },
-            channelId: ALARM_CHANNEL_ID,
-            actionTypeId: 'OPEN_APP',
-            extra: {
-              type: 'timer_completion',
-            },
-          },
-        ],
-      });
-    } catch (e) {
-      console.warn('Native alarm schedule note:', e);
-    }
-  }
-
-  /**
-   * Cancels a scheduled native alarm (e.g. when paused or reset)
-   */
-  public async cancelAlarm(numericId: number): Promise<void> {
-    if (!this.isNative()) return;
-
-    try {
-      await LocalNotifications.cancel({
-        notifications: [{ id: numericId }],
-      });
-    } catch (e) {
-      console.warn('Native alarm cancel note:', e);
-    }
-  }
-
-  /**
-   * Fires an immediate high-priority native notification with vibration and sound
-   */
-  public async triggerImmediateAlarm(title: string, body: string): Promise<void> {
-    if (!this.isNative()) return;
-
-    try {
-      await this.initialize();
-      const randomId = Math.floor(Math.random() * 100000) + 1;
-      await LocalNotifications.schedule({
-        notifications: [
-          {
-            id: randomId,
-            title: `⏰ ${title}`,
-            body,
-            channelId: ALARM_CHANNEL_ID,
-            autoCancel: true,
-          },
-        ],
-      });
-      await this.triggerHaptic('alarm');
-    } catch (e) {
-      console.warn('Native immediate alarm note:', e);
-    }
-  }
-
-  /**
-   * Native device haptic feedback
-   */
-  public async triggerHaptic(style: 'light' | 'medium' | 'heavy' | 'alarm'): Promise<void> {
-    if (!this.isNative()) {
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-        navigator.vibrate(style === 'alarm' ? [400, 200, 400, 200, 600] : 80);
-      }
-      return;
-    }
-
-    try {
-      if (style === 'alarm') {
-        await Haptics.notification({ type: 'ERROR' });
-        setTimeout(() => Haptics.vibrate({ duration: 500 }), 200);
-        setTimeout(() => Haptics.vibrate({ duration: 800 }), 800);
-      } else if (style === 'heavy') {
-        await Haptics.impact({ style: 'HEAVY' });
-      } else if (style === 'medium') {
-        await Haptics.impact({ style: 'MEDIUM' });
-      } else {
-        await Haptics.impact({ style: 'LIGHT' });
-      }
-    } catch {
-      // Fallback to web vibration
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-        navigator.vibrate(style === 'alarm' ? [400, 200, 400, 200, 600] : 80);
-      }
-    }
-  }
-}
-
-export const capacitorBridge = new CapacitorNativeBridge();
-</file>
-
 <file path="src/types.ts">
 export type ColorName = 
   | 'blue' 
@@ -6008,6 +5716,322 @@ export const Navbar: React.FC<NavbarProps> = ({
 };
 </file>
 
+<file path="src/utils/capacitorNativeBridge.ts">
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+export const ALARM_CHANNEL_ID = 'chronocraft_alarm_channel';
+export const ACTIVE_TIMER_CHANNEL_ID = 'chronocraft_active_timer_channel';
+export const RUNNING_NOTIFICATION_ID = 888888;
+
+// Define typed interfaces for Capacitor Native Plugins
+export interface LocalNotificationSchema {
+  id: number;
+  title: string;
+  body: string;
+  schedule?: {
+    at?: Date;
+    allowWhileIdle?: boolean;
+  };
+  channelId?: string;
+  actionTypeId?: string;
+  ongoing?: boolean;
+  autoCancel?: boolean;
+  extra?: Record<string, any>;
+  sound?: string;
+}
+
+export interface ChannelSchema {
+  id: string;
+  name: string;
+  description?: string;
+  importance: number;
+  visibility?: number;
+  vibration?: boolean;
+  lights?: boolean;
+  lightColor?: string;
+  sound?: string;
+}
+
+interface LocalNotificationsPlugin {
+  createChannel(channel: ChannelSchema): Promise<void>;
+  requestPermissions(): Promise<{ display: string }>;
+  schedule(options: { notifications: LocalNotificationSchema[] }): Promise<void>;
+  cancel(options: { notifications: { id: number }[] }): Promise<void>;
+}
+
+interface HapticsPlugin {
+  impact(options: { style: 'HEAVY' | 'MEDIUM' | 'LIGHT' }): Promise<void>;
+  notification(options: { type: 'SUCCESS' | 'WARNING' | 'ERROR' }): Promise<void>;
+  vibrate(options?: { duration?: number }): Promise<void>;
+}
+
+// Safely register plugins via Capacitor core (avoids compile-time static bundle failures)
+const LocalNotifications = registerPlugin<LocalNotificationsPlugin>('LocalNotifications');
+const Haptics = registerPlugin<HapticsPlugin>('Haptics');
+const ChronometerNotification = registerPlugin<any>('ChronometerNotification');
+
+class CapacitorNativeBridge {
+  private isInitialized = false;
+
+  public isNative(): boolean {
+    return typeof window !== 'undefined' && Capacitor.isNativePlatform();
+  }
+
+    public isAndroid(): boolean {
+    return this.isNative() && Capacitor.getPlatform() === 'android';
+  }
+
+    public async updateRunningChronometer(
+    id: string,
+    title: string,
+    text: string,
+    baseTimeMs: number = 0,
+    isCountDown: boolean = false
+  ): Promise<void> {
+    if (!this.isNative()) return;
+    try {
+      await ChronometerNotification.showChronometer({
+        id,
+        title,
+        text,
+        baseTime: baseTimeMs,
+        isCountDown,
+      });
+    } catch (e) {
+      console.warn('Chronometer plugin error:', e);
+    }
+  }
+
+  public async clearRunningChronometer(id?: string, clearAll: boolean = false): Promise<void> {
+    if (!this.isNative()) return;
+    try {
+      await ChronometerNotification.clearChronometer({
+        id: id || '888888',
+        clearAll,
+      });
+    } catch {}
+  }
+
+  /**
+   * Initializes native Android notification channels with high-priority ALARM attributes
+   */
+  public async initialize(): Promise<void> {
+    if (!this.isNative() || this.isInitialized) return;
+
+    try {
+      if (this.isAndroid()) {
+        // 1. High priority Alarm Channel (Importance 5 = IMPORTANCE_HIGH/MAX, bypasses silent/DND mode)
+        const alarmChannel: ChannelSchema = {
+          id: ALARM_CHANNEL_ID,
+          name: 'Timer & Workout Alarms',
+          description: 'High-priority alert channel that plays alarm sound and vibrates on timer completion',
+          importance: 5, // MAX importance in Android
+          visibility: 1, // VISIBILITY_PUBLIC (shows on lock screen)
+          vibration: true,
+          lights: true,
+          lightColor: '#EF4444',
+          sound: 'alarm.wav',
+        };
+
+        // 2. Active Running Timer Channel (Persistent ongoing notification)
+        const activeChannel: ChannelSchema = {
+          id: ACTIVE_TIMER_CHANNEL_ID,
+          name: 'Active Running Timers',
+          description: 'Ongoing lock screen and notification shade display for running stopwatches and timers',
+          importance: 2, // IMPORTANCE_HIGH so it shows on lockscreen and status bar
+          visibility: 1, // VISIBILITY_PUBLIC
+          vibration: false,
+          lights: false,
+        };
+
+        await LocalNotifications.createChannel(alarmChannel).catch(() => {});
+        await LocalNotifications.createChannel(activeChannel).catch(() => {});
+      }
+
+      this.isInitialized = true;
+    } catch (e) {
+      console.warn('Capacitor native bridge initialization note:', e);
+    }
+  }
+
+  /**
+   * Requests native notification permissions from Android OS
+   */
+  public async requestPermissions(): Promise<boolean> {
+    if (!this.isNative()) return false;
+
+    try {
+      const res = await LocalNotifications.requestPermissions();
+      await this.initialize();
+      return res.display === 'granted';
+    } catch (e) {
+      console.warn('Native permission request note:', e);
+      return false;
+    }
+  }
+
+  /**
+   * Updates an ongoing native Android notification for active running stopwatches, timers, or HIIT workouts.
+   * Keeps the live timer visible in the Android notification shade and lock screen.
+   */
+  public async updateRunningNotification(title: string, body: string): Promise<void> {
+    if (!this.isNative()) return;
+
+    try {
+      await this.initialize();
+      // Directly notify without AlarmManager schedule delay for instantaneous live updates
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: RUNNING_NOTIFICATION_ID,
+            title,
+            body,
+            channelId: ACTIVE_TIMER_CHANNEL_ID,
+            ongoing: true,
+            autoCancel: false,
+            actionTypeId: 'OPEN_APP',
+            extra: {
+              type: 'active_running_timer',
+            },
+          },
+        ],
+      });
+    } catch (e) {
+      console.warn('Native running notification note:', e);
+    }
+  }
+
+  /**
+   * Clears the ongoing running notification when all items are paused or reset
+   */
+  public async clearRunningNotification(): Promise<void> {
+    if (!this.isNative()) return;
+
+    try {
+      await LocalNotifications.cancel({
+        notifications: [{ id: RUNNING_NOTIFICATION_ID }],
+      });
+    } catch (e) {
+      console.warn('Native clear running notification note:', e);
+    }
+  }
+
+  /**
+   * Schedules an exact native Android background alarm for when a timer finishes.
+   * Uses Android AlarmManager (allowWhileIdle: true) so it fires even if the app is closed or in Doze mode.
+   */
+  public async scheduleAlarm(
+    numericId: number,
+    title: string,
+    body: string,
+    triggerDate: Date
+  ): Promise<void> {
+    if (!this.isNative()) return;
+
+    try {
+      await this.initialize();
+      // Ensure any previous alarm for this ID is removed first
+      await this.cancelAlarm(numericId);
+
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: numericId,
+            title: `⏰ ${title}`,
+            body,
+            schedule: {
+              at: triggerDate,
+              allowWhileIdle: true, // Wakes Android CPU from Doze mode (Exact Alarm)
+            },
+            channelId: ALARM_CHANNEL_ID,
+            actionTypeId: 'OPEN_APP',
+            extra: {
+              type: 'timer_completion',
+            },
+          },
+        ],
+      });
+    } catch (e) {
+      console.warn('Native alarm schedule note:', e);
+    }
+  }
+
+  /**
+   * Cancels a scheduled native alarm (e.g. when paused or reset)
+   */
+  public async cancelAlarm(numericId: number): Promise<void> {
+    if (!this.isNative()) return;
+
+    try {
+      await LocalNotifications.cancel({
+        notifications: [{ id: numericId }],
+      });
+    } catch (e) {
+      console.warn('Native alarm cancel note:', e);
+    }
+  }
+
+  /**
+   * Fires an immediate high-priority native notification with vibration and sound
+   */
+  public async triggerImmediateAlarm(title: string, body: string): Promise<void> {
+    if (!this.isNative()) return;
+
+    try {
+      await this.initialize();
+      const randomId = Math.floor(Math.random() * 100000) + 1;
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: randomId,
+            title: `⏰ ${title}`,
+            body,
+            channelId: ALARM_CHANNEL_ID,
+            autoCancel: true,
+          },
+        ],
+      });
+      await this.triggerHaptic('alarm');
+    } catch (e) {
+      console.warn('Native immediate alarm note:', e);
+    }
+  }
+
+  /**
+   * Native device haptic feedback
+   */
+  public async triggerHaptic(style: 'light' | 'medium' | 'heavy' | 'alarm'): Promise<void> {
+    if (!this.isNative()) {
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(style === 'alarm' ? [400, 200, 400, 200, 600] : 80);
+      }
+      return;
+    }
+
+    try {
+      if (style === 'alarm') {
+        await Haptics.notification({ type: 'ERROR' });
+        setTimeout(() => Haptics.vibrate({ duration: 500 }), 200);
+        setTimeout(() => Haptics.vibrate({ duration: 800 }), 800);
+      } else if (style === 'heavy') {
+        await Haptics.impact({ style: 'HEAVY' });
+      } else if (style === 'medium') {
+        await Haptics.impact({ style: 'MEDIUM' });
+      } else {
+        await Haptics.impact({ style: 'LIGHT' });
+      }
+    } catch {
+      // Fallback to web vibration
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(style === 'alarm' ? [400, 200, 400, 200, 600] : 80);
+      }
+    }
+  }
+}
+
+export const capacitorBridge = new CapacitorNativeBridge();
+</file>
+
 <file path="src/utils/backgroundNotificationService.ts">
 /**
  * Background Notification & Lock Screen MediaSession Service
@@ -6076,7 +6100,6 @@ class BackgroundNotificationService {
   private audioElement: HTMLAudioElement | null = null;
   private isAudioPlaying = false;
   private isAudioUnlocked = false;
-  private lastUpdateMs = 0;
   private lastNotificationKey = '';
   private swRegistration: ServiceWorkerRegistration | null = null;
   private onPlayCallback: (() => void) | null = null;
@@ -6214,7 +6237,7 @@ class BackgroundNotificationService {
     }
   }
 
-    /**
+  /**
    * Updates lock screen and native notifications for active clocks
    */
   public update(items: ActiveItemSummary[] | ActiveItemSummary | null, anyRunning: boolean) {
@@ -6278,7 +6301,7 @@ class BackgroundNotificationService {
       }
     }
 
-        // 3. Native Android Chronometer Notifications
+    // 3. Native Android Chronometer Notifications
     if (anyRunning && itemList.length > 0) {
       const activeIdsKey = itemList.map((i) => i.id).sort().join(',');
 
@@ -6330,32 +6353,11 @@ class BackgroundNotificationService {
       }
     }
 
-
     // 4. Document title synchronization
     if (primaryItem && anyRunning) {
       document.title = `(${primaryItem.formattedTime}) ${primaryItem.name} • ChronoCraft`;
     } else {
       document.title = 'ChronoCraft • Multi-Timer, Stopwatch & HIIT Suite';
-    }
-  }
-
-  private showOrUpdateNotification(title: string, body: string) {
-    if (this.swRegistration && 'showNotification' in this.swRegistration) {
-      this.swRegistration.showNotification(title, {
-        body,
-        tag: 'chronocraft-active-timer',
-        silent: true,
-        icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="%234f46e5"><circle cx="12" cy="12" r="10"/></svg>',
-      });
-    } else if ('Notification' in window && Notification.permission === 'granted') {
-      try {
-        new Notification(title, {
-          body,
-          tag: 'chronocraft-active-timer',
-          silent: true,
-          icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="%234f46e5"><circle cx="12" cy="12" r="10"/></svg>',
-        });
-      } catch {}
     }
   }
 
@@ -6365,24 +6367,26 @@ class BackgroundNotificationService {
   public notifyCompletion(title: string, message: string) {
     if (typeof window === 'undefined') return;
 
-    // Native Capacitor Android high-priority notification and alarm haptic
+    // 1. Native Capacitor Android completion notification (Early return prevents duplicate web notification)
     if (capacitorBridge.isNative()) {
       capacitorBridge.triggerImmediateAlarm(title, message);
       return;
     }
 
-    // Strong repeating vibration pattern for silent/vibrate mode
+    // 2. Strong repeating vibration pattern for web browser mode
     if ('vibrate' in navigator) {
       try {
         navigator.vibrate([500, 200, 500, 200, 1000]);
       } catch {}
     }
 
-    // High priority system notification (triggers notification chime/vibration)
+    // 3. Web Service Worker or System Notification Fallback
+    const notificationTag = `chronocraft-completion-${title.replace(/\s+/g, '-').toLowerCase()}`;
+
     if (this.swRegistration && 'showNotification' in this.swRegistration) {
       this.swRegistration.showNotification(`⏰ ${title}`, {
         body: message,
-        tag: 'chronocraft-alarm',
+        tag: notificationTag,
         requireInteraction: true,
         icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="%23ef4444"><circle cx="12" cy="12" r="10"/></svg>',
       } as NotificationOptions);
@@ -6390,7 +6394,7 @@ class BackgroundNotificationService {
       try {
         const notif = new Notification(`⏰ ${title}`, {
           body: message,
-          tag: 'chronocraft-alarm',
+          tag: notificationTag,
           requireInteraction: true,
           icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="%23ef4444"><circle cx="12" cy="12" r="10"/></svg>',
         });
@@ -10136,20 +10140,33 @@ export default function App() {
       const currentNow = Date.now();
       setNow(currentNow);
 
-      // 1. Check Stopwatches for Target Time Goals
+            // 1. Check Stopwatches for Target Time Goals
       stopwatches.forEach((sw) => {
         if (sw.isRunning && sw.targetGoalMs && sw.targetGoalMs > 0) {
           const elapsed = getStopwatchElapsed(sw, currentNow);
           if (elapsed >= sw.targetGoalMs && !reachedTargetGoals.current.has(sw.id)) {
             reachedTargetGoals.current.add(sw.id);
+
+            const targetTime = formatTime(sw.targetGoalMs);
+            const hoursNum = parseInt(targetTime.hours, 10);
+            const minutesNum = parseInt(targetTime.minutes, 10);
+            const secondsNum = parseInt(targetTime.seconds, 10);
+
+            let targetText = '';
+            if (hoursNum > 0) targetText += `${hoursNum} ${hoursNum === 1 ? 'hour' : 'hours'} `;
+            if (minutesNum > 0) targetText += `${minutesNum} ${minutesNum === 1 ? 'minute' : 'minutes'} `;
+            if (secondsNum > 0 || (hoursNum === 0 && minutesNum === 0)) {
+              targetText += `${secondsNum} ${secondsNum === 1 ? 'second' : 'seconds'}`;
+            }
+
             backgroundNotificationService.notifyCompletion(
               `Goal Reached: ${sw.name}`,
-              `Target of ${Math.round(sw.targetGoalMs / 60000)} minutes completed!`
+              `Target of ${targetText.trim()} completed!`
             );
             if (!isMuted) {
               soundEngine.playTargetReached();
               if (voiceEnabled) {
-                speechManager.speak(`Target goal of ${Math.round(sw.targetGoalMs / 60000)} minutes reached on ${sw.name}!`);
+                speechManager.speak(`Target goal of ${targetText.trim()} reached on ${sw.name}!`);
               }
             }
           }
@@ -10167,11 +10184,9 @@ export default function App() {
             // Halfway voice cue
             if (t.voiceEnabled !== false && voiceEnabled && !isMuted) {
               const halfDuration = t.duration / 2;
-              if (t.duration >= 30000 && remaining <= halfDuration && remaining > halfDuration - 2000) {
-                if (!halfwayNotifiedTimers.current.has(t.id)) {
-                  halfwayNotifiedTimers.current.add(t.id);
-                  speechManager.announceHalfway(t.name);
-                }
+              if (t.duration >= 10000 && remaining <= halfDuration && !halfwayNotifiedTimers.current.has(t.id)) {
+                halfwayNotifiedTimers.current.add(t.id);
+                speechManager.announceHalfway(t.name);
               }
             }
 
@@ -11498,8 +11513,8 @@ android {
         applicationId "com.arafat.chrono"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 24
-        versionName "1.0.39"
+        versionCode 25
+        versionName "1.0.40"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -11557,7 +11572,7 @@ try {
 {
   "name": "ChronoCraft",
   "private": true,
-  "version": "1.0.39",
+  "version": "1.0.40",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",

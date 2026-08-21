@@ -65,7 +65,6 @@ class BackgroundNotificationService {
   private audioElement: HTMLAudioElement | null = null;
   private isAudioPlaying = false;
   private isAudioUnlocked = false;
-  private lastUpdateMs = 0;
   private lastNotificationKey = '';
   private swRegistration: ServiceWorkerRegistration | null = null;
   private onPlayCallback: (() => void) | null = null;
@@ -203,150 +202,124 @@ class BackgroundNotificationService {
     }
   }
 
-    /**
+  /**
    * Updates lock screen and native notifications for active clocks
    */
-  public update(items: ActiveItemSummary[] | ActiveItemSummary | null, anyRunning: boolean) {
-    if (typeof window === 'undefined') return;
+  // src/utils/backgroundNotificationService.ts
 
-    const itemList = Array.isArray(items) ? items : items ? [items] : [];
-    const primaryItem = itemList[0] || null;
+// Add a public helper to reset notification key state
+public resetNotificationState() {
+  this.lastNotificationKey = '';
+}
 
-    // 1. Audio focus management
-    if (anyRunning) {
-      if (this.audioElement && !this.isAudioPlaying) {
-        this.audioElement
-          .play()
-          .then(() => {
-            this.isAudioPlaying = true;
-          })
-          .catch(() => {});
-      }
-    } else {
-      if (this.audioElement && this.isAudioPlaying) {
-        this.audioElement.pause();
-        this.isAudioPlaying = false;
-      }
+public update(items: ActiveItemSummary[] | ActiveItemSummary | null, anyRunning: boolean) {
+  if (typeof window === 'undefined') return;
+
+  const itemList = Array.isArray(items) ? items : items ? [items] : [];
+  const primaryItem = itemList[0] || null;
+
+  // 1. Audio focus management
+  if (anyRunning) {
+    if (this.audioElement && !this.isAudioPlaying) {
+      this.audioElement
+        .play()
+        .then(() => {
+          this.isAudioPlaying = true;
+        })
+        .catch(() => {});
     }
-
-    // 2. Web MediaSession Metadata (Lockscreen player display for primary item)
-    if ('mediaSession' in navigator) {
-      if (primaryItem && anyRunning) {
-        let artist = 'ChronoCraft Suite';
-        if (primaryItem.type === 'stopwatch') {
-          artist = '⏱️ Stopwatch Running';
-        } else if (primaryItem.type === 'interval') {
-          artist = `🔥 HIIT: ${primaryItem.phaseName || 'Phase'} (Round ${primaryItem.currentRound || 1}/${primaryItem.totalRounds || 8})`;
-        } else {
-          artist = '⏳ Timer Running';
-        }
-
-        try {
-          navigator.mediaSession.metadata = new MediaMetadata({
-            title: `${primaryItem.name} — ${primaryItem.formattedTime}`,
-            artist,
-            album: 'ChronoCraft Time Suite',
-            artwork: [
-              {
-                src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="%234f46e5"><circle cx="12" cy="12" r="10" stroke="white" stroke-width="2"/><polyline points="12 6 12 12 16 14" stroke="white" stroke-width="2"/></svg>',
-                sizes: '512x512',
-                type: 'image/svg+xml',
-              },
-            ],
-          });
-          navigator.mediaSession.playbackState = 'playing';
-        } catch {}
-      } else if (primaryItem && !anyRunning) {
-        try {
-          navigator.mediaSession.playbackState = 'paused';
-        } catch {}
-      } else {
-        try {
-          navigator.mediaSession.playbackState = 'none';
-        } catch {}
-      }
-    }
-
-        // 3. Native Android Chronometer Notifications
-    if (anyRunning && itemList.length > 0) {
-      const activeIdsKey = itemList.map((i) => i.id).sort().join(',');
-
-      if (this.lastNotificationKey !== activeIdsKey) {
-        this.lastNotificationKey = activeIdsKey;
-
-        if (capacitorBridge.isNative()) {
-          itemList.forEach((item) => {
-            let baseTimeMs = Date.now();
-            let isCountDown = false;
-
-            if (item.type === 'timer') {
-              const parts = item.formattedTime.split(':').map(Number);
-              const totalSec = parts.length === 3 
-                ? parts[0] * 3600 + parts[1] * 60 + parts[2]
-                : parts[0] * 60 + parts[1];
-              baseTimeMs = Date.now() + totalSec * 1000;
-              isCountDown = true;
-            } else {
-              const parts = item.formattedTime.split('.');
-              const mainParts = parts[0].split(':').map(Number);
-              const elapsedSec = mainParts.length === 3 
-                ? mainParts[0] * 3600 + mainParts[1] * 60 + mainParts[2]
-                : mainParts[0] * 60 + mainParts[1];
-              baseTimeMs = Date.now() - elapsedSec * 1000;
-              isCountDown = false;
-            }
-
-            const labelText = item.type === 'interval' 
-              ? `HIIT • ${item.phaseName || 'Work'} (R${item.currentRound}/${item.totalRounds})`
-              : `${item.type.toUpperCase()} • Active`;
-
-            capacitorBridge.updateRunningChronometer(
-              item.id,
-              item.name,
-              labelText,
-              baseTimeMs,
-              isCountDown
-            );
-          });
-        }
-      }
-    } else if (!anyRunning) {
-      if (this.lastNotificationKey !== '') {
-        this.lastNotificationKey = '';
-        if (capacitorBridge.isNative()) {
-          capacitorBridge.clearRunningChronometer(undefined, true);
-        }
-      }
-    }
-
-
-    // 4. Document title synchronization
-    if (primaryItem && anyRunning) {
-      document.title = `(${primaryItem.formattedTime}) ${primaryItem.name} • ChronoCraft`;
-    } else {
-      document.title = 'ChronoCraft • Multi-Timer, Stopwatch & HIIT Suite';
+  } else {
+    if (this.audioElement && this.isAudioPlaying) {
+      this.audioElement.pause();
+      this.isAudioPlaying = false;
     }
   }
 
-  private showOrUpdateNotification(title: string, body: string) {
-    if (this.swRegistration && 'showNotification' in this.swRegistration) {
-      this.swRegistration.showNotification(title, {
-        body,
-        tag: 'chronocraft-active-timer',
-        silent: true,
-        icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="%234f46e5"><circle cx="12" cy="12" r="10"/></svg>',
-      });
-    } else if ('Notification' in window && Notification.permission === 'granted') {
+  // 2. Web MediaSession Metadata
+  if ('mediaSession' in navigator) {
+    if (primaryItem && anyRunning) {
+      let artist = 'ChronoCraft Suite';
+      if (primaryItem.type === 'stopwatch') {
+        artist = '⏱️ Stopwatch Running';
+      } else if (primaryItem.type === 'interval') {
+        artist = `🔥 HIIT: ${primaryItem.phaseName || 'Phase'} (Round ${primaryItem.currentRound || 1}/${primaryItem.totalRounds || 8})`;
+      } else {
+        artist = '⏳ Timer Running';
+      }
+
       try {
-        new Notification(title, {
-          body,
-          tag: 'chronocraft-active-timer',
-          silent: true,
-          icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="%234f46e5"><circle cx="12" cy="12" r="10"/></svg>',
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: `${primaryItem.name} — ${primaryItem.formattedTime}`,
+          artist,
+          album: 'ChronoCraft Time Suite',
         });
+        navigator.mediaSession.playbackState = 'playing';
+      } catch {}
+    } else if (primaryItem && !anyRunning) {
+      try {
+        navigator.mediaSession.playbackState = 'paused';
+      } catch {}
+    } else {
+      try {
+        navigator.mediaSession.playbackState = 'none';
       } catch {}
     }
   }
+
+  // 3. Native Android Chronometer Notifications
+  if (anyRunning && itemList.length > 0) {
+    const activeIdsKey = itemList.map((i) => i.id).sort().join(',');
+
+    // Force update if key changed or state was explicitly reset
+    if (this.lastNotificationKey !== activeIdsKey) {
+      this.lastNotificationKey = activeIdsKey;
+
+      if (capacitorBridge.isNative()) {
+        itemList.forEach((item) => {
+          let baseTimeMs = Date.now();
+          let isCountDown = false;
+
+          if (item.type === 'timer') {
+            const parts = item.formattedTime.split(':').map(Number);
+            const totalSec = parts.length === 3 
+              ? parts[0] * 3600 + parts[1] * 60 + parts[2]
+              : parts[0] * 60 + parts[1];
+            baseTimeMs = Date.now() + totalSec * 1000;
+            isCountDown = true;
+          } else {
+            const parts = item.formattedTime.split('.');
+            const mainParts = parts[0].split(':').map(Number);
+            const elapsedSec = mainParts.length === 3 
+              ? mainParts[0] * 3600 + mainParts[1] * 60 + mainParts[2]
+              : mainParts[0] * 60 + mainParts[1];
+            baseTimeMs = Date.now() - elapsedSec * 1000;
+            isCountDown = false;
+          }
+
+          const labelText = item.type === 'interval' 
+            ? `HIIT • ${item.phaseName || 'Work'} (R${item.currentRound}/${item.totalRounds})`
+            : `${item.type.toUpperCase()} • Active`;
+
+          capacitorBridge.updateRunningChronometer(
+            item.id,
+            item.name,
+            labelText,
+            baseTimeMs,
+            isCountDown
+          );
+        });
+      }
+    }
+  } else if (!anyRunning) {
+    if (this.lastNotificationKey !== '') {
+      this.lastNotificationKey = '';
+      if (capacitorBridge.isNative()) {
+        capacitorBridge.clearRunningChronometer(undefined, true);
+      }
+    }
+  }
+}
+
 
   /**
    * Fires a high-priority completion notification & vibration when a timer or workout ends
@@ -354,24 +327,26 @@ class BackgroundNotificationService {
   public notifyCompletion(title: string, message: string) {
     if (typeof window === 'undefined') return;
 
-    // Native Capacitor Android high-priority notification and alarm haptic
+    // 1. Native Capacitor Android completion notification (Early return prevents duplicate web notification)
     if (capacitorBridge.isNative()) {
       capacitorBridge.triggerImmediateAlarm(title, message);
       return;
     }
 
-    // Strong repeating vibration pattern for silent/vibrate mode
+    // 2. Strong repeating vibration pattern for web browser mode
     if ('vibrate' in navigator) {
       try {
         navigator.vibrate([500, 200, 500, 200, 1000]);
       } catch {}
     }
 
-    // High priority system notification (triggers notification chime/vibration)
+    // 3. Web Service Worker or System Notification Fallback
+    const notificationTag = `chronocraft-completion-${title.replace(/\s+/g, '-').toLowerCase()}`;
+
     if (this.swRegistration && 'showNotification' in this.swRegistration) {
       this.swRegistration.showNotification(`⏰ ${title}`, {
         body: message,
-        tag: 'chronocraft-alarm',
+        tag: notificationTag,
         requireInteraction: true,
         icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="%23ef4444"><circle cx="12" cy="12" r="10"/></svg>',
       } as NotificationOptions);
@@ -379,7 +354,7 @@ class BackgroundNotificationService {
       try {
         const notif = new Notification(`⏰ ${title}`, {
           body: message,
-          tag: 'chronocraft-alarm',
+          tag: notificationTag,
           requireInteraction: true,
           icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 24 24" fill="%23ef4444"><circle cx="12" cy="12" r="10"/></svg>',
         });
