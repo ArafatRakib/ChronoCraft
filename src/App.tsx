@@ -199,108 +199,110 @@ export default function App() {
     }
   }, [wakeLockPref, anyRunning]);
 
-  // Keep ongoing Lock Screen & Notification shade in sync with running items
+      // Keep ongoing Lock Screen & Notification shade in sync with running items
   useEffect(() => {
-    const runningStopwatch = stopwatches.find((s) => s.isRunning);
-    const runningTimer = timers.find((t) => t.isRunning);
-    const runningInterval = intervals.find((i) => i.isRunning);
+    const runningStopwatches = stopwatches.filter((s) => s.isRunning);
+    const runningTimers = timers.filter((t) => t.isRunning);
+    const runningIntervals = intervals.filter((i) => i.isRunning);
 
-    const isAnyRunning = Boolean(runningStopwatch || runningTimer || runningInterval);
+    const isAnyRunning = runningStopwatches.length > 0 || runningTimers.length > 0 || runningIntervals.length > 0;
 
     if (!isAnyRunning) {
-      backgroundNotificationService.update(null, false);
+      backgroundNotificationService.update([], false);
       return;
     }
 
-    let summary: ActiveItemSummary | null = null;
-    if (runningInterval) {
-      const activePhase = runningInterval.phases[runningInterval.currentPhaseIndex] || runningInterval.phases[0];
-      const elapsed = runningInterval.startedAt ? now - runningInterval.startedAt : 0;
-      const rem = Math.max(0, runningInterval.phaseRemainingMs - elapsed);
+    const activeList: ActiveItemSummary[] = [];
+
+    // 1. Process all running Stopwatches
+    runningStopwatches.forEach((sw) => {
+      const elapsed = getStopwatchElapsed(sw, now);
+      const timeFmt = formatTime(elapsed);
+      const formattedTime = parseInt(timeFmt.hours, 10) > 0
+        ? `${timeFmt.hours}:${timeFmt.minutes}:${timeFmt.seconds}`
+        : `${timeFmt.minutes}:${timeFmt.seconds}.${timeFmt.centiseconds}`;
+
+      activeList.push({
+        id: sw.id,
+        name: sw.name,
+        type: 'stopwatch',
+        formattedTime,
+        isRunning: true,
+      });
+    });
+
+    // 2. Process all running Timers
+    runningTimers.forEach((t) => {
+      const rem = getTimerRemaining(t, now);
       const timeFmt = formatTime(rem);
-      summary = {
-        id: runningInterval.id,
-        name: runningInterval.name,
+      const formattedTime = parseInt(timeFmt.hours, 10) > 0
+        ? `${timeFmt.hours}:${timeFmt.minutes}:${timeFmt.seconds}`
+        : `${timeFmt.minutes}:${timeFmt.seconds}`;
+
+      activeList.push({
+        id: t.id,
+        name: t.name,
+        type: 'timer',
+        formattedTime,
+        isRunning: true,
+      });
+    });
+
+    // 3. Process all running HIIT Intervals
+    runningIntervals.forEach((inv) => {
+      const activePhase = inv.phases[inv.currentPhaseIndex] || inv.phases[0];
+      const elapsed = inv.startedAt ? now - inv.startedAt : 0;
+      const rem = Math.max(0, inv.phaseRemainingMs - elapsed);
+      const timeFmt = formatTime(rem);
+
+      activeList.push({
+        id: inv.id,
+        name: inv.name,
         type: 'interval',
         formattedTime: `${timeFmt.minutes}:${timeFmt.seconds}`,
         isRunning: true,
         phaseName: activePhase.name,
-        currentRound: runningInterval.currentRound,
-        totalRounds: runningInterval.totalRounds,
-      };
-
-      backgroundNotificationService.registerActionCallbacks({
-        onPlay: () => handleStartInterval(runningInterval.id),
-        onPause: () => handlePauseInterval(runningInterval.id),
-        onReset: () => handleResetInterval(runningInterval.id),
-        onSkip: () => handleStartInterval(runningInterval.id),
+        currentRound: inv.currentRound,
+        totalRounds: inv.totalRounds,
       });
-    } else if (runningTimer) {
-      const rem = getTimerRemaining(runningTimer, now);
-      const timeFmt = formatTime(rem);
-      const formattedTime =
-        parseInt(timeFmt.hours, 10) > 0
-          ? `${timeFmt.hours}:${timeFmt.minutes}:${timeFmt.seconds}`
-          : `${timeFmt.minutes}:${timeFmt.seconds}`;
-      summary = {
-        id: runningTimer.id,
-        name: runningTimer.name,
-        type: 'timer',
-        formattedTime,
-        isRunning: true,
-      };
+    });
 
-      backgroundNotificationService.registerActionCallbacks({
-        onPlay: () => handleStartTimer(runningTimer.id),
-        onPause: () => handlePauseTimer(runningTimer.id),
-        onReset: () => handleResetTimer(runningTimer.id),
-      });
-    } else if (runningStopwatch) {
-      const elapsed = getStopwatchElapsed(runningStopwatch, now);
-      const timeFmt = formatTime(elapsed);
-      const formattedTime =
-        parseInt(timeFmt.hours, 10) > 0
-          ? `${timeFmt.hours}:${timeFmt.minutes}:${timeFmt.seconds}`
-          : `${timeFmt.minutes}:${timeFmt.seconds}`;
-      summary = {
-        id: runningStopwatch.id,
-        name: runningStopwatch.name,
-        type: 'stopwatch',
-        formattedTime,
-        isRunning: true,
-      };
-
-      backgroundNotificationService.registerActionCallbacks({
-        onPlay: () => handleStartStopwatch(runningStopwatch.id),
-        onPause: () => handlePauseStopwatch(runningStopwatch.id),
-        onReset: () => handleResetStopwatch(runningStopwatch.id),
-        onSkip: () => handleAddLap(runningStopwatch.id),
-      });
-    }
-
-    backgroundNotificationService.update(summary, true);
+    backgroundNotificationService.update(activeList, true);
   }, [now, stopwatches, timers, intervals]);
-
+  
   // Main High Precision Ticker Loop (50ms)
   useEffect(() => {
     const interval = setInterval(() => {
       const currentNow = Date.now();
       setNow(currentNow);
 
-      // 1. Check Stopwatches for Target Time Goals
+            // 1. Check Stopwatches for Target Time Goals
       stopwatches.forEach((sw) => {
         if (sw.isRunning && sw.targetGoalMs && sw.targetGoalMs > 0) {
           const elapsed = getStopwatchElapsed(sw, currentNow);
           if (elapsed >= sw.targetGoalMs && !reachedTargetGoals.current.has(sw.id)) {
             reachedTargetGoals.current.add(sw.id);
+
+            const targetTime = formatTime(sw.targetGoalMs);
+            const hoursNum = parseInt(targetTime.hours, 10);
+            const minutesNum = parseInt(targetTime.minutes, 10);
+            const secondsNum = parseInt(targetTime.seconds, 10);
+
+            let targetText = '';
+            if (hoursNum > 0) targetText += `${hoursNum} ${hoursNum === 1 ? 'hour' : 'hours'} `;
+            if (minutesNum > 0) targetText += `${minutesNum} ${minutesNum === 1 ? 'minute' : 'minutes'} `;
+            if (secondsNum > 0 || (hoursNum === 0 && minutesNum === 0)) {
+              targetText += `${secondsNum} ${secondsNum === 1 ? 'second' : 'seconds'}`;
+            }
+
             backgroundNotificationService.notifyCompletion(
               `Goal Reached: ${sw.name}`,
-              `Target of ${Math.round(sw.targetGoalMs / 60000)} minutes completed!`
+              `Target of ${targetText.trim()} completed!`
             );
             if (!isMuted) {
               soundEngine.playTargetReached();
               if (voiceEnabled) {
-                speechManager.speak(`Target goal of ${Math.round(sw.targetGoalMs / 60000)} minutes reached on ${sw.name}!`);
+                speechManager.speak(`Target goal of ${targetText.trim()} reached on ${sw.name}!`);
               }
             }
           }
@@ -318,11 +320,9 @@ export default function App() {
             // Halfway voice cue
             if (t.voiceEnabled !== false && voiceEnabled && !isMuted) {
               const halfDuration = t.duration / 2;
-              if (t.duration >= 30000 && remaining <= halfDuration && remaining > halfDuration - 2000) {
-                if (!halfwayNotifiedTimers.current.has(t.id)) {
-                  halfwayNotifiedTimers.current.add(t.id);
-                  speechManager.announceHalfway(t.name);
-                }
+              if (t.duration >= 10000 && remaining <= halfDuration && !halfwayNotifiedTimers.current.has(t.id)) {
+                halfwayNotifiedTimers.current.add(t.id);
+                speechManager.announceHalfway(t.name);
               }
             }
 

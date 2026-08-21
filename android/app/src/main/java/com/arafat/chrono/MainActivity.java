@@ -23,13 +23,16 @@ public class MainActivity extends BridgeActivity {
     public static class ChronometerNotificationPlugin extends Plugin {
 
         private static final String CHANNEL_ID = "chronocraft_active_timer_channel";
-        private static final int NOTIFICATION_ID = 888888;
 
         @PluginMethod
         public void showChronometer(PluginCall call) {
+            String idStr = call.getString("id", "888888");
             String title = call.getString("title", "ChronoCraft");
+            String text = call.getString("text", "Active clock running in background");
             long baseTime = call.getLong("baseTime", System.currentTimeMillis());
             boolean isCountDown = call.getBoolean("isCountDown", false);
+
+            int notificationId = Math.abs(idStr.hashCode());
 
             Context context = getContext();
             NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -58,29 +61,42 @@ public class MainActivity extends BridgeActivity {
                 ? context.getApplicationInfo().icon 
                 : android.R.drawable.ic_dialog_info;
 
-            builder.setContentTitle(title)
-                   .setContentText("Active clock running in background")
+                        builder.setContentTitle(title)
+                   .setContentText(text)
                    .setSmallIcon(appIcon)
                    .setOngoing(true)
                    .setOnlyAlertOnce(true)
-                   .setUsesChronometer(true)
-                   .setWhen(baseTime);
+                   .setCategory(Notification.CATEGORY_SERVICE)
+                          .setVisibility(Notification.VISIBILITY_PUBLIC);
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                builder.setChronometerCountDown(isCountDown);
+
+            // Attach live chronometer if baseTime is provided
+            if (baseTime > 0) {
+                builder.setUsesChronometer(true).setWhen(baseTime);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    builder.setChronometerCountDown(isCountDown);
+                }
             }
 
             if (manager != null) {
-                manager.notify(NOTIFICATION_ID, builder.build());
+                manager.notify(notificationId, builder.build());
             }
             call.resolve();
         }
 
         @PluginMethod
         public void clearChronometer(PluginCall call) {
+            String idStr = call.getString("id", "888888");
+            boolean clearAll = call.getBoolean("clearAll", false);
             NotificationManager manager = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
+
             if (manager != null) {
-                manager.cancel(NOTIFICATION_ID);
+                if (clearAll) {
+                    manager.cancelAll();
+                } else {
+                    int notificationId = Math.abs(idStr.hashCode());
+                    manager.cancel(notificationId);
+                }
             }
             call.resolve();
         }

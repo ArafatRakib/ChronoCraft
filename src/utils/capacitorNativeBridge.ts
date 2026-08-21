@@ -62,15 +62,19 @@ class CapacitorNativeBridge {
     return this.isNative() && Capacitor.getPlatform() === 'android';
   }
 
-  public async updateRunningChronometer(
+    public async updateRunningChronometer(
+    id: string,
     title: string,
-    baseTimeMs: number,
+    text: string,
+    baseTimeMs: number = 0,
     isCountDown: boolean = false
   ): Promise<void> {
     if (!this.isNative()) return;
     try {
       await ChronometerNotification.showChronometer({
+        id,
         title,
+        text,
         baseTime: baseTimeMs,
         isCountDown,
       });
@@ -79,13 +83,15 @@ class CapacitorNativeBridge {
     }
   }
 
-  public async clearRunningChronometer(): Promise<void> {
+  public async clearRunningChronometer(id?: string, clearAll: boolean = false): Promise<void> {
     if (!this.isNative()) return;
     try {
-      await ChronometerNotification.clearChronometer();
+      await ChronometerNotification.clearChronometer({
+        id: id || '888888',
+        clearAll,
+      });
     } catch {}
   }
-
 
   /**
    * Initializes native Android notification channels with high-priority ALARM attributes

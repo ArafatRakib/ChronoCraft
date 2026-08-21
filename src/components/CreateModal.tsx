@@ -403,7 +403,14 @@ export const CreateModal: React.FC<CreateModalProps> = ({
         alert('Please enter a duration greater than 0 seconds.');
         return;
       }
-      const rawName = name.trim() || `${hours > 0 ? `${hours}h ` : ''}${minutes}m Timer`;
+      
+      let defaultLabel = '';
+      if (hours > 0) defaultLabel += `${hours}h `;
+      if (minutes > 0) defaultLabel += `${minutes}m `;
+      if (seconds > 0 || (hours === 0 && minutes === 0)) defaultLabel += `${seconds}s `;
+      defaultLabel += 'Timer';
+
+      const rawName = name.trim() || defaultLabel.trim();
       const finalName = capitalizeWords(rawName);
       onCreateTimer(finalName, durationMs, color, sound, soundRepeat, overtimeEnabled, voiceEnabled);
     }

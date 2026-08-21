@@ -203,13 +203,16 @@ class BackgroundNotificationService {
     }
   }
 
-  /**
-   * Updates lock screen and notification shade state with currently running item
+    /**
+   * Updates lock screen and native notifications for active clocks
    */
-  public update(primaryItem: ActiveItemSummary | null, anyRunning: boolean) {
+  public update(items: ActiveItemSummary[] | ActiveItemSummary | null, anyRunning: boolean) {
     if (typeof window === 'undefined') return;
 
-    // 1. Manage background silent audio player to keep OS audio focus & media session alive
+    const itemList = Array.isArray(items) ? items : items ? [items] : [];
+    const primaryItem = itemList[0] || null;
+
+    // 1. Audio focus management
     if (anyRunning) {
       if (this.audioElement && !this.isAudioPlaying) {
         this.audioElement
@@ -217,9 +220,7 @@ class BackgroundNotificationService {
           .then(() => {
             this.isAudioPlaying = true;
           })
-          .catch(() => {
-            // Auto-play policy might require user gesture, will succeed on next click
-          });
+          .catch(() => {});
       }
     } else {
       if (this.audioElement && this.isAudioPlaying) {
@@ -228,7 +229,7 @@ class BackgroundNotificationService {
       }
     }
 
-        // 2. Manage MediaSession (Lock screen & Notification shade interactive card)
+    // 2. Web MediaSession Metadata (Lockscreen player display for primary item)
     if ('mediaSession' in navigator) {
       if (primaryItem && anyRunning) {
         let artist = 'ChronoCraft Suite';
@@ -266,61 +267,64 @@ class BackgroundNotificationService {
       }
     }
 
-            // Native Android Chronometer Notification (Zero IPC re-posting, single timestamp push)
-    if (primaryItem && anyRunning) {
-      const notificationKey = `${primaryItem.id}:${primaryItem.name}:${primaryItem.type}`;
+        // 3. Native Android Chronometer Notifications
+    if (anyRunning && itemList.length > 0) {
+      const activeIdsKey = itemList.map((i) => i.id).sort().join(',');
 
-      if (this.lastNotificationKey !== notificationKey) {
-        this.lastNotificationKey = notificationKey;
+      if (this.lastNotificationKey !== activeIdsKey) {
+        this.lastNotificationKey = activeIdsKey;
+
         if (capacitorBridge.isNative()) {
-          // Calculate base timestamp for OS-level live counting
-          let baseTimeMs = Date.now();
-          let isCountDown = false;
+          itemList.forEach((item) => {
+            let baseTimeMs = Date.now();
+            let isCountDown = false;
 
-          if (primaryItem.type === 'timer') {
-            // Count down to target expiration time
-            const parts = primaryItem.formattedTime.split(':').map(Number);
-            const totalSec = parts.length === 3 
-              ? parts[0] * 3600 + parts[1] * 60 + parts[2]
-              : parts[0] * 60 + parts[1];
-            baseTimeMs = Date.now() + totalSec * 1000;
-            isCountDown = true;
-          } else {
-            // Count up from start time
-            const parts = primaryItem.formattedTime.split('.');
-            const mainParts = parts[0].split(':').map(Number);
-            const elapsedSec = mainParts.length === 3 
-              ? mainParts[0] * 3600 + mainParts[1] * 60 + mainParts[2]
-              : mainParts[0] * 60 + mainParts[1];
-            baseTimeMs = Date.now() - elapsedSec * 1000;
-            isCountDown = false;
-          }
+            if (item.type === 'timer') {
+              const parts = item.formattedTime.split(':').map(Number);
+              const totalSec = parts.length === 3 
+                ? parts[0] * 3600 + parts[1] * 60 + parts[2]
+                : parts[0] * 60 + parts[1];
+              baseTimeMs = Date.now() + totalSec * 1000;
+              isCountDown = true;
+            } else {
+              const parts = item.formattedTime.split('.');
+              const mainParts = parts[0].split(':').map(Number);
+              const elapsedSec = mainParts.length === 3 
+                ? mainParts[0] * 3600 + mainParts[1] * 60 + mainParts[2]
+                : mainParts[0] * 60 + mainParts[1];
+              baseTimeMs = Date.now() - elapsedSec * 1000;
+              isCountDown = false;
+            }
 
-          capacitorBridge.updateRunningChronometer(primaryItem.name, baseTimeMs, isCountDown);
+            const labelText = item.type === 'interval' 
+              ? `HIIT • ${item.phaseName || 'Work'} (R${item.currentRound}/${item.totalRounds})`
+              : `${item.type.toUpperCase()} • Active`;
+
+            capacitorBridge.updateRunningChronometer(
+              item.id,
+              item.name,
+              labelText,
+              baseTimeMs,
+              isCountDown
+            );
+          });
         }
       }
     } else if (!anyRunning) {
       if (this.lastNotificationKey !== '') {
         this.lastNotificationKey = '';
         if (capacitorBridge.isNative()) {
-          capacitorBridge.clearRunningChronometer();
+          capacitorBridge.clearRunningChronometer(undefined, true);
         }
       }
     }
-    
-    // 3. Document title synchronization
+
+
+    // 4. Document title synchronization
     if (primaryItem && anyRunning) {
       document.title = `(${primaryItem.formattedTime}) ${primaryItem.name} • ChronoCraft`;
     } else {
       document.title = 'ChronoCraft • Multi-Timer, Stopwatch & HIIT Suite';
-    }
-
-    // 4. Ongoing native Android notification handling
-    // When on native Android, the MediaSession already renders the persistent Android Media Notification 
-    // with smooth Play/Pause/Reset actions in both the lock screen and notification shade.
-    // If running with a timer, we also schedule exact AlarmManager wakeup at expiration.
-    if (!anyRunning && capacitorBridge.isNative()) {
-      capacitorBridge.clearRunningNotification();
     }
   }
 

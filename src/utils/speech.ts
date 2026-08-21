@@ -2,6 +2,29 @@ import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { capacitorBridge } from './capacitorNativeBridge';
 
 /**
+ * Expands abbreviated time units for TTS (e.g. "0m 30s Timer" -> "30 seconds Timer")
+ * Prevents TTS from pronouncing "m" as "meters" and "s" as "south".
+ */
+function sanitizeTextForSpeech(text: string): string {
+  if (!text) return '';
+  
+  return text
+    // 1. Remove 0m / 0h prefixes
+    .replace(/^0[hm]\s+/i, '')
+    .replace(/\b0[hm]\s+/i, '')
+    // 2. Expand hour abbreviations
+    .replace(/\b1\s*h\b/gi, '1 hour')
+    .replace(/(\d+)\s*h\b/gi, '$1 hours')
+    // 3. Expand minute abbreviations
+    .replace(/\b1\s*m\b/gi, '1 minute')
+    .replace(/(\d+)\s*m\b/gi, '$1 minutes')
+    // 4. Expand second abbreviations
+    .replace(/\b1\s*s\b/gi, '1 second')
+    .replace(/(\d+)\s*s\b/gi, '$1 seconds');
+}
+
+
+/**
  * Speech synthesis manager for voice cues & progress announcements
  * Uses @capacitor-community/text-to-speech for Native Android and falls back to Web Speech Synthesis.
  */
@@ -65,8 +88,11 @@ class SpeechAssistant {
     return this.enabled;
   }
 
-  public async speak(text: string, priority: boolean = false) {
+    public async speak(text: string, priority: boolean = false) {
     if (!this.enabled) return;
+
+    // Expand all abbreviations (e.g. "10s" -> "10 seconds", "5m" -> "5 minutes")
+    const spokenText = sanitizeTextForSpeech(text);
 
     // 1. Try Native Android TTS via Capacitor
     if (capacitorBridge.isNative()) {
@@ -75,20 +101,19 @@ class SpeechAssistant {
           await TextToSpeech.stop().catch(() => {});
         }
         await TextToSpeech.speak({
-          text,
+          text: spokenText,
           lang: 'en-US',
           rate: 1.0,
           pitch: 1.0,
           volume: 1.0,
-          category: 'alarm',
         });
         return;
-      } catch {
-        // Fallback to web speech
+      } catch (err) {
+        console.warn('Native TTS failed, falling back to Web Speech:', err);
       }
     }
 
-    // 2. Web Speech Synthesis API
+    // 2. Web Speech Synthesis API Fallback
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
         if (window.speechSynthesis.paused) {
@@ -98,7 +123,7 @@ class SpeechAssistant {
           window.speechSynthesis.cancel();
         }
 
-        const utterance = new SpeechSynthesisUtterance(text);
+        const utterance = new SpeechSynthesisUtterance(spokenText);
         if (!this.voice) {
           this.initVoice();
         }
@@ -109,7 +134,6 @@ class SpeechAssistant {
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
-        // Retain utterance reference to avoid Android WebView GC drop
         this.currentUtterance = utterance;
         utterance.onend = () => {
           this.currentUtterance = null;
@@ -119,11 +143,11 @@ class SpeechAssistant {
         };
 
         window.speechSynthesis.speak(utterance);
-      } catch {
-        // Fallback gracefully
+      } catch (e) {
+        console.warn('Web Speech API error:', e);
       }
     }
-  }
+    }
 
   public testVoice() {
     this.speak('Voice cues are active and ready.', true);
@@ -137,12 +161,14 @@ class SpeechAssistant {
     this.speak(`${seconds}`, true);
   }
 
-  public announceHalfway(timerName: string) {
-    this.speak(`Halfway through ${timerName}.`, false);
+    public announceHalfway(timerName: string) {
+    const cleanName = sanitizeTextForSpeech(timerName);
+    this.speak(`Halfway through ${cleanName}.`, false);
   }
 
   public announceTimerFinished(timerName: string) {
-    this.speak(`Time is up for ${timerName}!`, true);
+    const cleanName = sanitizeTextForSpeech(timerName);
+    this.speak(`Time is up for ${cleanName}!`, true);
   }
 
   public cancel() {
