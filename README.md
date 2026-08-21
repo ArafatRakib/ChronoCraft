@@ -16,7 +16,7 @@
  <a href="obtainium://app/add?url=https://github.com/ArafatRakib/ChronoCraft">
   <img src="https://img.shields.io/badge/Obtainium-Add%20App-purple?style=for-the-badge&logo=github" alt="Install via Obtainium" />
 </a>
-  <a href="https://arafatrakib.github.io/ChronoCraft/"><img src="https://img.shields.io/badge/ChronoCraft-Orion%20Store-0052CC?style=for-the-badge&logo=android&logoColor=white" alt="ChronoCraft / Orion Store" /></a>
+  <a href="orionstore://app/chronocraft"><img src="https://img.shields.io/badge/ChronoCraft-Orion%20Store-0052CC?style=for-the-badge&logo=android&logoColor=white" alt="ChronoCraft / Orion Store" /></a>
   <a href="https://arafatrakib.github.io/ChronoCraft/">
   <img src="https://img.shields.io/badge/🌐_Try_Web_App-Live_Demo-6366f1?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Live Web Demo" />
 </a>
