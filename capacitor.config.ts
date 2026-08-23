@@ -4,6 +4,8 @@ export interface CapacitorConfig {
   webDir: string;
   server?: {
     androidScheme?: string;
+    url?: string;
+    cleartext?: boolean;
   };
   backgroundColor?: string;
   plugins?: {
@@ -15,14 +17,23 @@ export interface CapacitorConfig {
   };
 }
 
+// ⚡ CHANGE THIS TO 'true' FOR INSTANT LIVE CODING, 'false' FOR REAL APK RELEASES
+const IS_DEV_MODE = true; 
+
 const config: CapacitorConfig = {
   appId: 'com.arafat.chrono',
   appName: 'ChronoCraft',
   webDir: 'dist',
-  server: {
-    androidScheme: 'https',
-  },
   backgroundColor: '#020617',
+  server: IS_DEV_MODE 
+    ? {
+        // Point to your Termux Vite server
+        url: 'http://localhost:3000', 
+        cleartext: true
+      }
+    : {
+        androidScheme: 'https',
+      },
   plugins: {
     LocalNotifications: {
       smallIcon: 'ic_stat_name',

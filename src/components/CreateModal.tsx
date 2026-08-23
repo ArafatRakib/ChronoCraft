@@ -548,14 +548,18 @@ export const CreateModal: React.FC<CreateModalProps> = ({
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                 Duration (Hours : Minutes : Seconds)
               </label>
-              <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col items-center">
                   <input
                     type="number"
                     min="0"
                     max="99"
-                    value={hours}
-                    onChange={(e) => setHours(Math.max(0, parseInt(e.target.value) || 0))}
+                    value={hours === 0 ? '' : hours}
+                    placeholder="0"
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0);
+                      setHours(val);
+                    }}
                     className="w-full py-2.5 text-center font-mono font-bold text-lg rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                   />
                   <span className="text-[11px] font-medium text-slate-400 mt-1">Hours</span>
@@ -565,8 +569,12 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                     type="number"
                     min="0"
                     max="59"
-                    value={minutes}
-                    onChange={(e) => setMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                    value={minutes === 0 ? '' : minutes}
+                    placeholder="0"
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0);
+                      setMinutes(val);
+                    }}
                     className="w-full py-2.5 text-center font-mono font-bold text-lg rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                   />
                   <span className="text-[11px] font-medium text-slate-400 mt-1">Minutes</span>
@@ -576,13 +584,18 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                     type="number"
                     min="0"
                     max="59"
-                    value={seconds}
-                    onChange={(e) => setSeconds(Math.max(0, parseInt(e.target.value) || 0))}
+                    value={seconds === 0 ? '' : seconds}
+                    placeholder="0"
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0);
+                      setSeconds(val);
+                    }}
                     className="w-full py-2.5 text-center font-mono font-bold text-lg rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                   />
                   <span className="text-[11px] font-medium text-slate-400 mt-1">Seconds</span>
                 </div>
               </div>
+
             </div>
           )}
 
@@ -928,15 +941,17 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                   {enableTargetGoal ? 'Enabled' : 'Disabled'}
                 </button>
               </div>
-
-              {enableTargetGoal && (
+                {enableTargetGoal && (
                 <div className="grid grid-cols-3 gap-2 pt-2 animate-in fade-in">
                   <div>
                     <input
                       type="number"
                       min="0"
-                      value={targetHours}
-                      onChange={(e) => setTargetHours(Math.max(0, parseInt(e.target.value) || 0))}
+                      value={targetHours === 0 ? '' : targetHours}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0);
+                        setTargetHours(val);
+                      }}
                       placeholder="HH"
                       className="w-full py-2 text-center font-mono font-bold text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
                     />
@@ -947,8 +962,11 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                       type="number"
                       min="0"
                       max="59"
-                      value={targetMinutes}
-                      onChange={(e) => setTargetMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                      value={targetMinutes === 0 ? '' : targetMinutes}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0);
+                        setTargetMinutes(val);
+                      }}
                       placeholder="MM"
                       className="w-full py-2 text-center font-mono font-bold text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
                     />
@@ -959,8 +977,11 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                       type="number"
                       min="0"
                       max="59"
-                      value={targetSeconds}
-                      onChange={(e) => setTargetSeconds(Math.max(0, parseInt(e.target.value) || 0))}
+                      value={targetSeconds === 0 ? '' : targetSeconds}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0);
+                        setTargetSeconds(val);
+                      }}
                       placeholder="SS"
                       className="w-full py-2 text-center font-mono font-bold text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
                     />
@@ -968,6 +989,7 @@ export const CreateModal: React.FC<CreateModalProps> = ({
                   </div>
                 </div>
               )}
+
             </div>
           )}
 
