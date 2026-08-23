@@ -14,7 +14,8 @@ import {
   Flame, 
   Tag,
   Check,
-  PlusCircle
+  PlusCircle,
+  Edit3
 } from 'lucide-react';
 
 interface PresetsModalProps {
@@ -23,6 +24,7 @@ interface PresetsModalProps {
   customPresets: TimerPreset[];
   onSelectPreset: (preset: TimerPreset) => void;
   onCreateCustomPreset: (preset: TimerPreset) => void;
+  onUpdateCustomPreset: (preset: TimerPreset) => void;
   onDeleteCustomPreset: (id: string) => void;
 }
 
@@ -34,9 +36,11 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
   customPresets,
   onSelectPreset,
   onCreateCustomPreset,
+  onUpdateCustomPreset,
   onDeleteCustomPreset,
 }) => {
   const [isCreating, setIsCreating] = useState(false);
+  const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Productivity');
   const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
@@ -81,17 +85,32 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
     const rawTitle = newTitle.trim() || `${minutes}m Custom Timer`;
     const finalTitle = capitalizeWords(rawTitle);
 
-    const preset: TimerPreset = {
-      id: `custom-preset-${Date.now()}`,
-      title: finalTitle,
-      category: finalCategory,
-      durationMs,
-      color: newColor,
-      isCustom: true,
-    };
+            if (editingPresetId) {
+      const updatedPreset: TimerPreset = {
+        id: editingPresetId,
+        title: finalTitle,
+        category: finalCategory,
+        durationMs,
+        color: newColor,
+        isCustom: true,
+        clockType: 'timer',
+      };
+      onUpdateCustomPreset(updatedPreset);
+    } else {
+      const preset: TimerPreset = {
+        id: `custom-preset-${Date.now()}`,
+        title: finalTitle,
+        category: finalCategory,
+        durationMs,
+        color: newColor,
+        isCustom: true,
+        clockType: 'timer',
+      };
+      onCreateCustomPreset(preset);
+    }
 
-    onCreateCustomPreset(preset);
     setIsCreating(false);
+    setEditingPresetId(null);
     setNewTitle('');
     setSelectedCategory(finalCategory);
     setIsAddingNewCategory(false);
@@ -99,6 +118,22 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
     setHours(0);
     setMinutes(10);
     setSeconds(0);
+  };
+
+  const handleEditPresetClick = (preset: TimerPreset) => {
+    setEditingPresetId(preset.id);
+    setNewTitle(preset.title);
+    setSelectedCategory(preset.category || 'Productivity');
+    setNewColor(preset.color as ColorName);
+    
+    const h = Math.floor(preset.durationMs / (1000 * 60 * 60));
+    const m = Math.floor((preset.durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((preset.durationMs % (1000 * 60)) / 1000);
+    setHours(h);
+    setMinutes(m);
+    setSeconds(s);
+    
+    setIsCreating(true);
   };
 
   return (
@@ -147,15 +182,19 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
                   <Plus className="w-4 h-4 text-indigo-600" />
-                  Add Custom Preset
+                  {editingPresetId ? 'Edit Custom Preset' : 'Add Custom Preset'}
                 </h3>
                 <button
                   type="button"
-                  onClick={() => setIsCreating(false)}
+                  onClick={() => {
+                    setIsCreating(false);
+                    setEditingPresetId(null);
+                  }}
                   className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                 >
                   Cancel
                 </button>
+
               </div>
 
               <div className="space-y-3">
@@ -364,15 +403,24 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {preset.isCustom && (
-                            <button
-                              type="button"
-                              onClick={() => onDeleteCustomPreset(preset.id)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                              title="Delete Custom Preset"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                          {preset.isCustom && (                                                          <>
+                              <button
+                                type="button"
+                                onClick={() => handleEditPresetClick(preset)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer"
+                                title="Edit Custom Preset"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onDeleteCustomPreset(preset.id)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                title="Delete Custom Preset"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
                           )}
 
                           <button

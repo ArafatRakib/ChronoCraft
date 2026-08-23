@@ -1604,6 +1604,11 @@ export default function App() {
         customPresets={customPresets}
         onSelectPreset={handleSelectPreset}
         onCreateCustomPreset={(newPreset) => setCustomPresets((prev) => [newPreset, ...prev])}
+        onUpdateCustomPreset={(updatedPreset) => {
+          const updatedList = customPresets.map((p) => (p.id === updatedPreset.id ? updatedPreset : p));
+          setCustomPresets(updatedList);
+          saveCustomPresets(updatedList);
+        }}
         onDeleteCustomPreset={(id) => setCustomPresets((prev) => prev.filter((p) => p.id !== id))}
       />
 
