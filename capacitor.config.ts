@@ -18,7 +18,7 @@ export interface CapacitorConfig {
 }
 
 // ⚡ CHANGE THIS TO 'true' FOR INSTANT LIVE CODING, 'false' FOR REAL APK RELEASES
-const IS_DEV_MODE = false; 
+const IS_DEV_MODE = true; 
 
 const config: CapacitorConfig = {
   appId: 'com.arafat.chrono',
