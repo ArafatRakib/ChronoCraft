@@ -39,6 +39,7 @@ interface StopwatchCardProps {
   onOpenFocus: (id: string) => void;
   onOpenAnalytics?: (id: string) => void;
   onSaveAsPreset?: (name: string, durationMs: number, color: ColorName) => void;
+  onEditClock?: (stopwatch: StopwatchItem) => void;
   isCompact?: boolean;
 }
 
@@ -56,6 +57,7 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
   onOpenFocus,
   onOpenAnalytics,
   onSaveAsPreset,
+  onEditClock,
   isCompact = false,
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
@@ -461,6 +463,20 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
                 <span>Rename</span>
               </button>
 
+              {onEditClock && (
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onEditClock(stopwatch);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center gap-2 cursor-pointer font-semibold"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <span>Edit Clock</span>
+                </button>
+              )}
+
+              
               <button
                 onClick={() => {
                   setShowMenu(false);

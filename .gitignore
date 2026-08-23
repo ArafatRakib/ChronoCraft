@@ -16,3 +16,4 @@ android/captures/
 android/.idea/
 keystore_base64.txt
 release.keystore
+repomix-output.xml

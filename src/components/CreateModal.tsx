@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ColorName, SoundPreset, TimerPreset, IntervalPhase, IntervalPhaseType } from '../types';
+import { ColorName, SoundPreset, TimerPreset, IntervalPhase, IntervalPhaseType, StopwatchItem, TimerItem, IntervalTimerItem } from '../types';
 import { COLOR_KEYS, COLOR_THEMES, getColorTheme } from '../constants/colors';
 import { ColorPicker } from './ColorPicker';
 import { soundEngine } from '../utils/audio';
@@ -31,6 +31,27 @@ interface CreateModalProps {
   initialType?: 'stopwatch' | 'timer' | 'interval';
   defaultSound?: SoundPreset;
   defaultSoundRepeat?: number;
+  editingItem?: StopwatchItem | TimerItem | IntervalTimerItem | null;
+  onUpdateStopwatch?: (id: string, name: string, color: ColorName, targetGoalMs?: number) => void;
+  onUpdateTimer?: (
+    id: string,
+    name: string,
+    durationMs: number,
+    color: ColorName,
+    sound: SoundPreset,
+    soundRepeat?: number,
+    overtimeEnabled?: boolean,
+    voiceEnabled?: boolean
+  ) => void;
+  onUpdateInterval?: (
+    id: string,
+    name: string,
+    color: ColorName,
+    rounds: number,
+    phases: IntervalPhase[],
+    sound: SoundPreset,
+    voiceEnabled?: boolean
+  ) => void;
   onCreateStopwatch: (name: string, color: ColorName, targetGoalMs?: number) => void;
   onCreateTimer: (
     name: string, 
@@ -144,6 +165,10 @@ export const CreateModal: React.FC<CreateModalProps> = ({
   initialType = 'timer',
   defaultSound = 'chime',
   defaultSoundRepeat = 3,
+  editingItem = null,
+  onUpdateStopwatch,
+  onUpdateTimer,
+  onUpdateInterval,
   onCreateStopwatch,
   onCreateTimer,
   onCreateInterval,
@@ -201,39 +226,91 @@ export const CreateModal: React.FC<CreateModalProps> = ({
   // Sync state whenever the modal opens or initialType changes
   useEffect(() => {
     if (isOpen) {
-      setType(initialType);
-      setName('');
-      setColor(initialType === 'interval' ? 'rose' : 'indigo');
-      setSound(defaultSound || 'chime');
-      setSoundRepeat(defaultSoundRepeat || 3);
-      setOvertimeEnabled(true);
-      setVoiceEnabled(true);
-      setHours(0);
-      setMinutes(5);
-      setSeconds(0);
-      setEnableTargetGoal(false);
-      setTargetHours(0);
-      setTargetMinutes(5);
-      setTargetSeconds(0);
+            if (editingItem) {
+        setName(editingItem.name);
+        setColor(editingItem.color);
+        
+        if ('laps' in editingItem) {
+          // StopwatchItem
+          setType('stopwatch');
+          if (editingItem.targetGoalMs && editingItem.targetGoalMs > 0) {
+            setEnableTargetGoal(true);
+            const th = Math.floor(editingItem.targetGoalMs / (1000 * 60 * 60));
+            const tm = Math.floor((editingItem.targetGoalMs % (1000 * 60 * 60)) / (1000 * 60));
+            const ts = Math.floor((editingItem.targetGoalMs % (1000 * 60)) / 1000);
+            setTargetHours(th);
+            setTargetMinutes(tm);
+            setTargetSeconds(ts);
+          } else {
+            setEnableTargetGoal(false);
+          }
+        } else if ('duration' in editingItem) {
+          // TimerItem
+          setType('timer');
+          setSound(editingItem.soundAlert || defaultSound);
+          setSoundRepeat(editingItem.soundRepeat || defaultSoundRepeat);
+          setOvertimeEnabled(editingItem.overtimeEnabled !== false);
+          setVoiceEnabled(editingItem.voiceEnabled !== false);
+          
+          const h = Math.floor(editingItem.duration / (1000 * 60 * 60));
+          const m = Math.floor((editingItem.duration % (1000 * 60 * 60)) / (1000 * 60));
+          const s = Math.floor((editingItem.duration % (1000 * 60)) / 1000);
+          setHours(h);
+          setMinutes(m);
+          setSeconds(s);
+        } else if ('phases' in editingItem) {
+          // IntervalTimerItem
+          setType('interval');
+          setIntervalMode('builder');
+          setBuilderRounds(editingItem.totalRounds || 8);
+          setSound(editingItem.soundAlert || defaultSound);
+          setVoiceEnabled(editingItem.voiceEnabled !== false);
+          setBuilderPhases(
+            editingItem.phases.map((p, idx) => ({
+              id: p.id || `phase-${idx}`,
+              name: p.name,
+              minutes: Math.floor(p.durationMs / 60000),
+              seconds: Math.floor((p.durationMs % 60000) / 1000),
+              type: p.type,
+              color: p.color,
+            }))
+          );
+        }
+      } else {
+        setType(initialType);
+        setName('');
+        setColor(initialType === 'interval' ? 'rose' : 'indigo');
+        setSound(defaultSound || 'chime');
+        setSoundRepeat(defaultSoundRepeat || 3);
+        setOvertimeEnabled(true);
+        setVoiceEnabled(true);
+        setHours(0);
+        setMinutes(5);
+        setSeconds(0);
+        setEnableTargetGoal(false);
+        setTargetHours(0);
+        setTargetMinutes(5);
+        setTargetSeconds(0);
 
-      setIntervalMode('quick');
-      setIntervalRounds(8);
-      setWorkMinutes(0);
-      setWorkSeconds(20);
-      setWorkName('Work Sprint');
-      setWorkColor('rose');
-      setHasRest(true);
-      setRestMinutes(0);
-      setRestSeconds(10);
-      setRestName('Rest');
-      setRestColor('emerald');
-      setHasPrep(true);
-      setPrepMinutes(0);
-      setPrepSeconds(5);
-      setPrepName('Get Ready');
-      setPrepColor('amber');
+        setIntervalMode('quick');
+        setIntervalRounds(8);
+        setWorkMinutes(0);
+        setWorkSeconds(20);
+        setWorkName('Work Sprint');
+        setWorkColor('rose');
+        setHasRest(true);
+        setRestMinutes(0);
+        setRestSeconds(10);
+        setRestName('Rest');
+        setRestColor('emerald');
+        setHasPrep(true);
+        setPrepMinutes(0);
+        setPrepSeconds(5);
+        setPrepName('Get Ready');
+        setPrepColor('amber');
+      }
     }
-  }, [isOpen, initialType, defaultSound, defaultSoundRepeat]);
+  }, [isOpen, initialType, defaultSound, defaultSoundRepeat, editingItem]);
 
   if (!isOpen) return null;
 
@@ -329,7 +406,11 @@ export const CreateModal: React.FC<CreateModalProps> = ({
       const targetMs = enableTargetGoal
         ? (targetHours * 3600 + targetMinutes * 60 + targetSeconds) * 1000
         : undefined;
-      onCreateStopwatch(finalName, color, targetMs && targetMs > 0 ? targetMs : undefined);
+            if (editingItem && onUpdateStopwatch) {
+        onUpdateStopwatch(editingItem.id, finalName, color, targetMs && targetMs > 0 ? targetMs : undefined);
+      } else {
+        onCreateStopwatch(finalName, color, targetMs && targetMs > 0 ? targetMs : undefined);
+      }
     } else if (type === 'interval') {
       const phases: IntervalPhase[] = [];
 
@@ -376,8 +457,11 @@ export const CreateModal: React.FC<CreateModalProps> = ({
           name.trim() ||
           `${capitalizeWords(workName)} (${workMinutes > 0 ? `${workMinutes}m` : ''}${workSeconds}s x ${safeRounds})`;
         const finalName = capitalizeWords(rawName);
-
-        onCreateInterval(finalName, color, safeRounds, phases, sound, voiceEnabled);
+        if (editingItem && onUpdateInterval) {
+          onUpdateInterval(editingItem.id, finalName, color, safeRounds, phases, sound, voiceEnabled);
+        } else {
+          onCreateInterval(finalName, color, safeRounds, phases, sound, voiceEnabled);
+        }
       } else {
         // Multi-phase builder
         const safeRounds = Math.max(1, builderRounds || 1);
@@ -394,8 +478,11 @@ export const CreateModal: React.FC<CreateModalProps> = ({
 
         const rawName = name.trim() || `Custom Routine (${builderPhases.length} Phases x ${safeRounds})`;
         const finalName = capitalizeWords(rawName);
-
-        onCreateInterval(finalName, color, safeRounds, builtPhases, sound, voiceEnabled);
+        if (editingItem && onUpdateInterval) {
+          onUpdateInterval(editingItem.id, finalName, color, safeRounds, builtPhases, sound, voiceEnabled);
+        } else {
+          onCreateInterval(finalName, color, safeRounds, builtPhases, sound, voiceEnabled);
+        }
       }
     } else {
       const durationMs = (hours * 3600 + minutes * 60 + seconds) * 1000;
@@ -412,7 +499,11 @@ export const CreateModal: React.FC<CreateModalProps> = ({
 
       const rawName = name.trim() || defaultLabel.trim();
       const finalName = capitalizeWords(rawName);
-      onCreateTimer(finalName, durationMs, color, sound, soundRepeat, overtimeEnabled, voiceEnabled);
+      if (editingItem && onUpdateTimer) {
+        onUpdateTimer(editingItem.id, finalName, durationMs, color, sound, soundRepeat, overtimeEnabled, voiceEnabled);
+      } else {
+        onCreateTimer(finalName, durationMs, color, sound, soundRepeat, overtimeEnabled, voiceEnabled);
+      }
     }
 
     onClose();
@@ -436,8 +527,11 @@ export const CreateModal: React.FC<CreateModalProps> = ({
             <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
               <Plus className="w-5 h-5" />
             </div>
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Create New Clock</h2>
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+              {editingItem ? 'Edit Clock Settings' : 'Create New Clock'}
+            </h2>
           </div>
+
           <button
             onClick={onClose}
             className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"

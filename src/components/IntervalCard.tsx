@@ -39,6 +39,7 @@ interface IntervalCardProps {
     color: ColorName, 
     intervalConfig?: TimerPreset['intervalConfig']
   ) => void;
+  onEditClock?: (interval: IntervalTimerItem) => void;
   onDelete: (id: string) => void;
   onOpenFocus?: (id: string) => void;
   isCompact?: boolean;
@@ -56,6 +57,7 @@ export const IntervalCard: React.FC<IntervalCardProps> = ({
   onUpdateColor,
   onToggleVoice,
   onSaveAsPreset,
+  onEditClock,
   onDelete,
   onOpenFocus,
   isCompact = false,
@@ -422,6 +424,19 @@ export const IntervalCard: React.FC<IntervalCardProps> = ({
                   <span>Rename</span>
                 </button>
 
+                {onEditClock && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      onEditClock(interval);
+                    }}
+                    className="w-full px-2.5 py-1.5 text-left rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center gap-2 cursor-pointer font-semibold"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Edit Clock</span>
+                  </button>
+                )}
+                
                 {onUpdateColor && (
                   <button
                     onClick={() => {

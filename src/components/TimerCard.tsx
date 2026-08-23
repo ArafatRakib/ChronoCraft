@@ -40,6 +40,7 @@ interface TimerCardProps {
   onToggleOvertime?: (id: string) => void;
   onToggleVoice?: (id: string) => void;
   onSaveAsPreset?: (name: string, durationMs: number, color: ColorName) => void;
+  onEditClock?: (timer: TimerItem) => void;
   onDelete: (id: string) => void;
   onOpenFocus: (id: string) => void;
   isCompact?: boolean;
@@ -68,6 +69,7 @@ export const TimerCard: React.FC<TimerCardProps> = ({
   onToggleOvertime,
   onToggleVoice,
   onSaveAsPreset,
+  onEditClock,
   onDelete,
   onOpenFocus,
   isCompact = false,
@@ -501,7 +503,18 @@ export const TimerCard: React.FC<TimerCardProps> = ({
                 <Edit3 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span>Rename</span>
               </button>
-
+              {onEditClock && (
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onEditClock(timer);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center gap-2 cursor-pointer whitespace-nowrap font-semibold"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <span>Edit Clock</span>
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowMenu(false);

@@ -149,6 +149,7 @@ export default function App() {
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createInitialType, setCreateInitialType] = useState<'stopwatch' | 'timer' | 'interval'>('timer');
+  const [editingClock, setEditingClock] = useState<StopwatchItem | TimerItem | IntervalTimerItem | null>(null);
   const [isPresetsOpen, setIsPresetsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -529,6 +530,13 @@ export default function App() {
     setStopwatches((prev) => prev.map((sw) => (sw.id === id ? { ...sw, targetGoalMs } : sw)));
   };
 
+    const handleFullUpdateStopwatch = (id: string, name: string, color: ColorName, targetGoalMs?: number) => {
+    reachedTargetGoals.current.delete(id);
+    setStopwatches((prev) =>
+      prev.map((sw) => (sw.id === id ? { ...sw, name, color, targetGoalMs } : sw))
+    );
+  };
+
   const handleDeleteStopwatch = (id: string) => {
     setStopwatches((prev) => prev.filter((sw) => sw.id !== id));
     if (focusId === id) setFocusId(null);
@@ -668,6 +676,41 @@ export default function App() {
     setTimers((prev) => prev.map((t) => (t.id === id ? { ...t, soundRepeat } : t)));
   };
 
+    const handleFullUpdateTimer = (
+    id: string,
+    name: string,
+    durationMs: number,
+    color: ColorName,
+    soundAlert: SoundPreset,
+    soundRepeat?: number,
+    overtimeEnabled?: boolean,
+    voiceEnabledPref?: boolean
+  ) => {
+    soundEngine.stopAlarm(id);
+    capacitorBridge.cancelAlarm(getNumericId(id));
+    firedTimerIds.current.delete(id);
+    halfwayNotifiedTimers.current.delete(id);
+
+    setTimers((prev) =>
+      prev.map((t) => {
+        if (t.id === id) {
+          return {
+            ...t,
+            name,
+            duration: durationMs,
+            remainingTime: t.isRunning ? Math.min(t.remainingTime, durationMs) : durationMs,
+            color,
+            soundAlert,
+            soundRepeat: soundRepeat !== undefined ? soundRepeat : t.soundRepeat,
+            overtimeEnabled: overtimeEnabled !== undefined ? overtimeEnabled : t.overtimeEnabled,
+            voiceEnabled: voiceEnabledPref !== undefined ? voiceEnabledPref : t.voiceEnabled,
+          };
+        }
+        return t;
+      })
+    );
+  };
+
   const handleDeleteTimer = (id: string) => {
     soundEngine.stopAlarm(id);
     capacitorBridge.cancelAlarm(getNumericId(id));
@@ -768,6 +811,35 @@ export default function App() {
   const handleToggleIntervalVoice = (id: string) => {
     setIntervals((prev) =>
       prev.map((inv) => (inv.id === id ? { ...inv, voiceEnabled: inv.voiceEnabled === false } : inv))
+    );
+  };
+
+    const handleFullUpdateInterval = (
+    id: string,
+    name: string,
+    color: ColorName,
+    rounds: number,
+    phases: IntervalPhase[],
+    sound: SoundPreset,
+    voiceEnabledPref?: boolean
+  ) => {
+    setIntervals((prev) =>
+      prev.map((inv) => {
+        if (inv.id === id) {
+          const firstPhase = phases[0];
+          return {
+            ...inv,
+            name,
+            color,
+            totalRounds: rounds,
+            phases,
+            soundAlert: sound,
+            voiceEnabled: voiceEnabledPref !== undefined ? voiceEnabledPref : inv.voiceEnabled,
+            phaseRemainingMs: inv.isRunning ? inv.phaseRemainingMs : (firstPhase ? firstPhase.durationMs : 20000),
+          };
+        }
+        return inv;
+      })
     );
   };
 
@@ -1435,6 +1507,10 @@ export default function App() {
                       onOpenFocus={setFocusId}
                       onOpenAnalytics={setAnalyticsStopwatchId}
                       onSaveAsPreset={handleSaveAsPreset}
+                      onEditClock={(swItem) => {
+                        setEditingClock(swItem);
+                        setIsCreateOpen(true);
+                      }}
                       isCompact={viewLayout === 'compact'}
                     />
                   ))}
@@ -1489,6 +1565,10 @@ export default function App() {
                         onToggleOvertime={handleToggleTimerOvertime}
                         onToggleVoice={handleToggleTimerVoice}
                         onSaveAsPreset={handleSaveAsPreset}
+                        onEditClock={(timerItem) => {
+                          setEditingClock(timerItem);
+                          setIsCreateOpen(true);
+                        }}
                         onDelete={handleDeleteTimer}
                         onOpenFocus={setFocusId}
                         isCompact={viewLayout === 'compact'}
@@ -1542,6 +1622,10 @@ export default function App() {
                         onUpdateColor={handleUpdateIntervalColor}
                         onToggleVoice={handleToggleIntervalVoice}
                         onSaveAsPreset={handleSaveAsPreset}
+                        onEditClock={(intervalItem) => {
+                          setEditingClock(intervalItem);
+                          setIsCreateOpen(true);
+                        }}
                         onDelete={handleDeleteInterval}
                         onOpenFocus={setFocusId}
                         isCompact={viewLayout === 'compact'}
@@ -1570,6 +1654,14 @@ export default function App() {
         initialType={createInitialType}
         defaultSound={globalSound}
         defaultSoundRepeat={globalSoundRepeat}
+        editingItem={editingClock}
+        onClose={() => {
+          setIsCreateOpen(false);
+          setEditingClock(null);
+        }}
+        onUpdateStopwatch={handleFullUpdateStopwatch}
+        onUpdateTimer={handleFullUpdateTimer}
+        onUpdateInterval={handleFullUpdateInterval}
         onCreateStopwatch={handleCreateStopwatch}
         onCreateTimer={handleCreateTimer}
         onCreateInterval={handleCreateInterval}
