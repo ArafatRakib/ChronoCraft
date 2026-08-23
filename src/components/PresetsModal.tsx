@@ -296,9 +296,12 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                       type="number"
                       min="0"
                       max="99"
-                      value={hours}
-                      onChange={(e) => setHours(Math.max(0, parseInt(e.target.value) || 0))}
-                      placeholder="HH"
+                      value={hours === 0 ? '' : hours}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value, 10) || 0);
+                        setHours(val);
+                      }}
+                      placeholder="0"
                       className="w-full py-2 text-center text-xs font-bold font-mono rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
                     />
                     <span className="block text-[10px] text-center text-slate-400 mt-0.5">Hours</span>
@@ -308,9 +311,12 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                       type="number"
                       min="0"
                       max="59"
-                      value={minutes}
-                      onChange={(e) => setMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
-                      placeholder="MM"
+                      value={minutes === 0 ? '' : minutes}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? 0 : Math.max(0, Math.min(59, parseInt(e.target.value, 10) || 0));
+                        setMinutes(val);
+                      }}
+                      placeholder="0"
                       className="w-full py-2 text-center text-xs font-bold font-mono rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
                     />
                     <span className="block text-[10px] text-center text-slate-400 mt-0.5">Minutes</span>
@@ -320,14 +326,18 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                       type="number"
                       min="0"
                       max="59"
-                      value={seconds}
-                      onChange={(e) => setSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
-                      placeholder="SS"
+                      value={seconds === 0 ? '' : seconds}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? 0 : Math.max(0, Math.min(59, parseInt(e.target.value, 10) || 0));
+                        setSeconds(val);
+                      }}
+                      placeholder="0"
                       className="w-full py-2 text-center text-xs font-bold font-mono rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
                     />
                     <span className="block text-[10px] text-center text-slate-400 mt-0.5">Seconds</span>
                   </div>
                 </div>
+
               </div>
 
               {/* Color Picker */}
