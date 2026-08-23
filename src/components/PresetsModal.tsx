@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TIMER_PRESETS } from '../constants/presets';
 import { TimerPreset, ColorName } from '../types';
-import { COLOR_THEMES } from '../constants/colors';
+import { COLOR_THEMES, getColorTheme } from '../constants/colors';
 import { ColorPicker } from './ColorPicker';
 import { formatDurationHuman } from '../utils/timeFormatter';
 import { capitalizeWords } from '../utils/textFormatters';
@@ -52,8 +52,8 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
   // Extract all distinct categories (excluding generic 'Custom' to keep list clean)
   const categories = useMemo(() => {
     const set = new Set<string>(DEFAULT_CATEGORIES);
-    allPresets.forEach((p) => {
-      if (p.category && p.category !== 'Custom') {
+            allPresets.forEach((p) => {
+      if (p && p.category) {
         set.add(p.category);
       }
     });
@@ -329,7 +329,7 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {presetsInCat.map((preset) => {
-                    const theme = COLOR_THEMES[preset.color as ColorName] || COLOR_THEMES.blue;
+                                        const theme = getColorTheme(preset.color || 'blue');
                     return (
                       <div
                         key={preset.id}
@@ -347,6 +347,11 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                             <span className="text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
                               <Clock className="w-3 h-3" />
                               {formatDurationHuman(preset.durationMs)}
+                              {preset.clockType === 'stopwatch' && (
+                                <span className="ml-1 px-1.5 py-0.2 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-[10px] font-sans font-bold">
+                                  Stopwatch
+                                </span>
+                              )}
                               {preset.intervalConfig && (
                                 <span className="ml-1 px-1.5 py-0.2 rounded bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 text-[10px] font-sans font-bold">
                                   Interval
@@ -355,7 +360,6 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                             </span>
                           </div>
                         </div>
-
                         <div className="flex items-center gap-1.5 shrink-0">
                           {preset.isCustom && (
                             <button

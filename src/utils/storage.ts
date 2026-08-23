@@ -181,12 +181,19 @@ export function loadCustomPresets(): TimerPreset[] {
     if (raw === null) return [];
     const items = JSON.parse(raw);
     if (!Array.isArray(items)) return [];
-    return items.map((p: any) => ({
-      ...p,
-      title: capitalizeWords(p.title || 'Custom Preset'),
-      category: capitalizeWords(p.category || 'Custom'),
-      durationMs: typeof p.durationMs === 'number' && !isNaN(p.durationMs) ? Math.max(1000, p.durationMs) : 60000,
-    }));
+        return items
+      .filter((p: any) => p && typeof p === 'object')
+      .map((p: any) => ({
+        id: p.id || `custom-preset-${Date.now()}-${Math.random()}`,
+        title: capitalizeWords(p.title || p.name || 'Custom Preset'),
+        category: p.category ? capitalizeWords(p.category) : 'Custom',
+        durationMs: typeof p.durationMs === 'number' && !isNaN(p.durationMs) ? Math.max(1000, p.durationMs) : 60000,
+        color: p.color || 'indigo',
+        isCustom: true,
+        clockType: p.clockType === 'stopwatch' || p.clockType === 'interval' ? p.clockType : 'timer',
+        targetGoalMs: typeof p.targetGoalMs === 'number' && !isNaN(p.targetGoalMs) ? p.targetGoalMs : undefined,
+        intervalConfig: p.intervalConfig && typeof p.intervalConfig === 'object' ? p.intervalConfig : undefined,
+      }));
   } catch {
     return [];
   }

@@ -430,11 +430,18 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
                 <span>{hasTarget ? 'Edit Target Goal' : 'Set Target Goal'}</span>
               </button>
 
-              {onSaveAsPreset && elapsedMs > 0 && (
+              {onSaveAsPreset && (
                 <button
                   onClick={() => {
                     setShowMenu(false);
-                    onSaveAsPreset(stopwatch.name, elapsedMs, stopwatch.color);
+                    onSaveAsPreset(
+                      stopwatch.name, 
+                      stopwatch.targetGoalMs && stopwatch.targetGoalMs > 0 ? stopwatch.targetGoalMs : (elapsedMs > 0 ? elapsedMs : 60000), 
+                      stopwatch.color,
+                      undefined,
+                      'stopwatch',
+                      stopwatch.targetGoalMs
+                    );
                   }}
                   className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer"
                 >

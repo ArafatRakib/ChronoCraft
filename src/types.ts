@@ -99,6 +99,8 @@ export interface TimerPreset {
   color: ColorName;
   iconName?: string;
   isCustom?: boolean;
+  clockType?: 'stopwatch' | 'timer' | 'interval';
+  targetGoalMs?: number;
   intervalConfig?: {
     rounds: number;
     phases: {

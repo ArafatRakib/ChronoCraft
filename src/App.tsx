@@ -850,18 +850,29 @@ export default function App() {
     };
     setIntervals((prev) => [newInterval, ...prev]);
   };
-
-  const handleSaveAsPreset = (title: string, durationMs: number, color: ColorName) => {
+  const handleSaveAsPreset = (
+    title: string, 
+    durationMs: number, 
+    color: ColorName, 
+    intervalConfig?: TimerPreset['intervalConfig'],
+    clockType: 'stopwatch' | 'timer' | 'interval' = 'timer',
+    targetGoalMs?: number
+  ) => {
     const formattedTitle = capitalizeWords(title);
     const preset: TimerPreset = {
       id: `custom-preset-${Date.now()}`,
       title: formattedTitle || 'Custom Preset',
       category: 'Custom',
-      durationMs,
+      durationMs: Math.max(1000, durationMs),
       color,
       isCustom: true,
+      clockType,
+      targetGoalMs,
+      intervalConfig,
     };
-    setCustomPresets((prev) => [preset, ...prev]);
+    const updated = [preset, ...customPresets];
+    setCustomPresets(updated);
+    saveCustomPresets(updated);
   };
 
   const handleSelectPreset = (preset: TimerPreset) => {
@@ -880,10 +891,12 @@ export default function App() {
         phasesWithIds,
         globalSound
       );
+    } else if (preset.clockType === 'stopwatch') {
+      handleCreateStopwatch(preset.title, preset.color, preset.targetGoalMs);
     } else {
       handleCreateTimer(preset.title, preset.durationMs, preset.color, globalSound, globalSoundRepeat);
     }
-  };
+  };  
 
   // ==========================================
   // BATCH ACTIONS
@@ -1528,6 +1541,7 @@ export default function App() {
                         onUpdateName={handleUpdateIntervalName}
                         onUpdateColor={handleUpdateIntervalColor}
                         onToggleVoice={handleToggleIntervalVoice}
+                        onSaveAsPreset={handleSaveAsPreset}
                         onDelete={handleDeleteInterval}
                         onOpenFocus={setFocusId}
                         isCompact={viewLayout === 'compact'}

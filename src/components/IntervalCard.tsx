@@ -18,6 +18,7 @@ import {
   Flame, 
   Dumbbell, 
   MoreVertical,
+  BookmarkPlus,
   Maximize2
 } from 'lucide-react';
 
@@ -32,6 +33,12 @@ interface IntervalCardProps {
   onUpdateName?: (id: string, name: string) => void;
   onUpdateColor?: (id: string, color: ColorName) => void;
   onToggleVoice?: (id: string) => void;
+  onSaveAsPreset?: (
+    name: string, 
+    durationMs: number, 
+    color: ColorName, 
+    intervalConfig?: TimerPreset['intervalConfig']
+  ) => void;
   onDelete: (id: string) => void;
   onOpenFocus?: (id: string) => void;
   isCompact?: boolean;
@@ -48,6 +55,7 @@ export const IntervalCard: React.FC<IntervalCardProps> = ({
   onUpdateName,
   onUpdateColor,
   onToggleVoice,
+  onSaveAsPreset,
   onDelete,
   onOpenFocus,
   isCompact = false,
@@ -378,6 +386,28 @@ export const IntervalCard: React.FC<IntervalCardProps> = ({
                   >
                     <Maximize2 className="w-3.5 h-3.5 text-indigo-500" />
                     <span>Focus Mode</span>
+                  </button>
+                )}
+                {onSaveAsPreset && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      const totalIntervalMs = interval.phases.reduce((sum, p) => sum + p.durationMs, 0) * interval.totalRounds;
+                      onSaveAsPreset(interval.name, totalIntervalMs, interval.color, {
+                        rounds: interval.totalRounds,
+                        phases: interval.phases.map((p) => ({
+                          id: p.id,
+                          name: p.name,
+                          durationMs: p.durationMs,
+                          type: p.type,
+                          color: p.color,
+                        })),
+                      });
+                    }}
+                    className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer"
+                  >
+                    <BookmarkPlus className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Save as Preset</span>
                   </button>
                 )}
 
