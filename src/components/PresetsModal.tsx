@@ -347,14 +347,17 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                             <span className="text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
                               <Clock className="w-3 h-3" />
                               {formatDurationHuman(preset.durationMs)}
-                              {preset.clockType === 'stopwatch' && (
+                                                            {preset.clockType === 'stopwatch' ? (
                                 <span className="ml-1 px-1.5 py-0.2 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 text-[10px] font-sans font-bold">
                                   Stopwatch
                                 </span>
-                              )}
-                              {preset.intervalConfig && (
+                              ) : preset.intervalConfig ? (
                                 <span className="ml-1 px-1.5 py-0.2 rounded bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 text-[10px] font-sans font-bold">
                                   Interval
+                                </span>
+                              ) : (
+                                <span className="ml-1 px-1.5 py-0.2 rounded bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-sans font-bold">
+                                  Timer
                                 </span>
                               )}
                             </span>
