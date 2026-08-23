@@ -41,6 +41,9 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
+  const [editingClockType, setEditingClockType] = useState<'stopwatch' | 'timer' | 'interval'>('timer');
+  const [editingTargetGoalMs, setEditingTargetGoalMs] = useState<number | undefined>(undefined);
+  const [editingIntervalConfig, setEditingIntervalConfig] = useState<TimerPreset['intervalConfig'] | undefined>(undefined);
   const [newTitle, setNewTitle] = useState('');
   const formRef = useRef<HTMLFormElement | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('Productivity');
@@ -50,6 +53,28 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(10);
   const [seconds, setSeconds] = useState(0);
+
+  const handleEditPresetClick = (preset: TimerPreset) => {
+    setEditingPresetId(preset.id);
+    setEditingClockType(preset.clockType || (preset.intervalConfig ? 'interval' : 'timer'));
+    setEditingTargetGoalMs(preset.targetGoalMs);
+    setEditingIntervalConfig(preset.intervalConfig);
+    setNewTitle(preset.title);
+    setSelectedCategory(preset.category || 'Productivity');
+    setNewColor(preset.color as ColorName);
+    
+    const h = Math.floor(preset.durationMs / (1000 * 60 * 60));
+    const m = Math.floor((preset.durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((preset.durationMs % (1000 * 60)) / 1000);
+    setHours(h);
+    setMinutes(m);
+    setSeconds(s);
+    
+    setIsCreating(true);
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
+    }, 0);
+  };
 
   // Combine built-in presets and user custom presets
   const allPresets = useMemo(() => [...customPresets, ...TIMER_PRESETS], [customPresets]);
@@ -86,7 +111,7 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
     const rawTitle = newTitle.trim() || `${minutes}m Custom Timer`;
     const finalTitle = capitalizeWords(rawTitle);
 
-            if (editingPresetId) {
+    if (editingPresetId) {
       const updatedPreset: TimerPreset = {
         id: editingPresetId,
         title: finalTitle,
@@ -94,7 +119,9 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
         durationMs,
         color: newColor,
         isCustom: true,
-        clockType: 'timer',
+        clockType: editingClockType,
+        targetGoalMs: editingClockType === 'stopwatch' ? (durationMs > 0 ? durationMs : editingTargetGoalMs) : editingTargetGoalMs,
+        intervalConfig: editingIntervalConfig,
       };
       onUpdateCustomPreset(updatedPreset);
     } else {
@@ -112,6 +139,9 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
 
     setIsCreating(false);
     setEditingPresetId(null);
+    setEditingClockType('timer');
+    setEditingTargetGoalMs(undefined);
+    setEditingIntervalConfig(undefined);
     setNewTitle('');
     setSelectedCategory(finalCategory);
     setIsAddingNewCategory(false);
@@ -121,24 +151,6 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
     setSeconds(0);
   };
 
-  const handleEditPresetClick = (preset: TimerPreset) => {
-    setEditingPresetId(preset.id);
-    setNewTitle(preset.title);
-    setSelectedCategory(preset.category || 'Productivity');
-    setNewColor(preset.color as ColorName);
-    
-    const h = Math.floor(preset.durationMs / (1000 * 60 * 60));
-    const m = Math.floor((preset.durationMs % (1000 * 60 * 60)) / (1000 * 60));
-    const s = Math.floor((preset.durationMs % (1000 * 60)) / 1000);
-    setHours(h);
-    setMinutes(m);
-    setSeconds(s);
-    
-    setIsCreating(true);
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
-    }, 0);
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
