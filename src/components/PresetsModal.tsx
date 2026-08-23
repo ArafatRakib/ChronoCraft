@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { TIMER_PRESETS } from '../constants/presets';
 import { TimerPreset, ColorName } from '../types';
 import { COLOR_THEMES, getColorTheme } from '../constants/colors';
@@ -42,6 +42,7 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState('');
+  const formRef = useRef<HTMLFormElement | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('Productivity');
   const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
   const [customCategoryInput, setCustomCategoryInput] = useState('');
@@ -134,6 +135,9 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
     setSeconds(s);
     
     setIsCreating(true);
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
+    }, 0);
   };
 
   return (
@@ -176,6 +180,7 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
           {/* Create New Custom Preset Form */}
           {isCreating && (
             <form
+              ref={formRef}
               onSubmit={handleSaveCustom}
               className="p-4 sm:p-5 rounded-2xl bg-indigo-50/60 dark:bg-slate-800/80 border border-indigo-200 dark:border-indigo-800/60 space-y-4 animate-in fade-in"
             >
