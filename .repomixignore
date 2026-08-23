@@ -1,0 +1,64 @@
+# Dependencies & Package Management
+node_modules/
+.pnpm-store/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Web Build Outputs & Bundles
+dist/
+build/
+www/
+out/
+.next/
+.nuxt/
+.svelte-kit/
+
+# Capacitor Native Generated Code
+# We ignore the heavy native build artifacts but keep config and manifest files
+android/app/build/
+android/app/src/main/assets/public/
+android/.gradle/
+android/build/
+android/captures/
+ios/App/App/public/
+ios/App/Pods/
+ios/App/App.xcworkspace/
+
+# IDE, OS & Environment Files
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Media, Assets & Binary Files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.webp
+*.mp3
+*.mp4
+*.zip
+*.tar.gz
+
+# Logs, Tests & Coverage
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+coverage/
+.cypress/
+playwright-report/
+
+# Repomix Outputs (Prevent recursive inclusions)
+repomix-output.txt
+repomix-output.xml
+repomix-output.json
+repomix-output.md

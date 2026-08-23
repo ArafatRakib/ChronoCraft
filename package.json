@@ -1,7 +1,7 @@
 {
   "name": "ChronoCraft",
   "private": true,
-  "version": "1.0.42",
+  "version": "1.0.43",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
