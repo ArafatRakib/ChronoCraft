@@ -171,6 +171,7 @@ export default function App() {
 
   // Refs for tracking transitions and preventing double alerts
   const firedTimerIds = useRef<Set<string>>(new Set());
+  const firedIntervalIds = useRef<Set<string>>(new Set());
   const halfwayNotifiedTimers = useRef<Set<string>>(new Set());
   const reachedTargetGoals = useRef<Set<string>>(new Set());
   const lastPhaseKey = useRef<Map<string, string>>(new Map());
@@ -352,7 +353,6 @@ export default function App() {
                     speechManager.announceTimerFinished(t.name);
                   }
                 }
-              }
                 // Record completion in history log
                 const historyEntry: ClockHistoryEntry = {
                   id: `history-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -371,6 +371,7 @@ export default function App() {
                   saveClockHistory(updated);
                   return updated;
                 });
+              }
 
               return {
                 ...t,
@@ -430,25 +431,29 @@ export default function App() {
                 }
               }
               // Record HIIT completion history
-              const historyEntry: ClockHistoryEntry = {
-                id: `history-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-                clockId: inv.id,
-                clockName: inv.name,
-                clockType: 'interval',
-                color: inv.color,
-                startedAt: inv.startedAt || currentNow,
-                completedAt: currentNow,
-                durationMs: inv.phases.reduce((acc, p) => acc + p.durationMs, 0) * inv.totalRounds,
-                elapsedMs: inv.phases.reduce((acc, p) => acc + p.durationMs, 0) * inv.totalRounds,
-                status: 'completed',
-                completedRounds: inv.totalRounds,
-                totalRounds: inv.totalRounds,
-              };
-              setClockHistory((prev) => {
-                const updated = [historyEntry, ...prev];
-                saveClockHistory(updated);
-                return updated;
-              });
+              if (!firedIntervalIds.current.has(inv.id)) {
+                firedIntervalIds.current.add(inv.id);
+                // Record HIIT completion history
+                const historyEntry: ClockHistoryEntry = {
+                  id: `history-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                  clockId: inv.id,
+                  clockName: inv.name,
+                  clockType: 'interval',
+                  color: inv.color,
+                  startedAt: inv.startedAt || currentNow,
+                  completedAt: currentNow,
+                  durationMs: inv.phases.reduce((acc, p) => acc + p.durationMs, 0) * inv.totalRounds,
+                  elapsedMs: inv.phases.reduce((acc, p) => acc + p.durationMs, 0) * inv.totalRounds,
+                  status: 'completed',
+                  completedRounds: inv.totalRounds,
+                  totalRounds: inv.totalRounds,
+                };
+                setClockHistory((prev) => {
+                  const updated = [historyEntry, ...prev];
+                  saveClockHistory(updated);
+                  return updated;
+                });
+              }
               return {
                 ...inv,
                 isRunning: false,
@@ -546,43 +551,54 @@ export default function App() {
     );
   };
 
-  const handlePauseStopwatch = (id: string) => {
+    const handlePauseStopwatch = (id: string) => {
     setStopwatches((prev) =>
       prev.map((sw) => {
-        if (sw.id === id) {
-          const totalElapsed = getStopwatchElapsed(sw, Date.now());
-          if (totalElapsed > 1000) {
-            const entry: ClockHistoryEntry = {
-              id: `history-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-              clockId: sw.id,
-              clockName: sw.name,
-              clockType: 'stopwatch',
-              color: sw.color,
-              startedAt: sw.createdAt,
-              completedAt: Date.now(),
-              durationMs: sw.targetGoalMs || totalElapsed,
-              elapsedMs: totalElapsed,
-              status: 'stopped',
-              targetGoalMs: sw.targetGoalMs,
-              isTargetReached: sw.targetGoalMs ? totalElapsed >= sw.targetGoalMs : undefined,
-              laps: [...sw.laps],
-            };
-            setClockHistory((prev) => {
-              const updated = [entry, ...prev];
-              saveClockHistory(updated);
-              return updated;
-            });
-          }
-          return { ...sw, isRunning: false, startedAt: null, accumulatedTime: 0, laps: [] };
+        if (sw.id === id && sw.isRunning && sw.startedAt) {
+          const currentElapsed = sw.accumulatedTime + (Date.now() - sw.startedAt);
+          return { ...sw, isRunning: false, startedAt: null, accumulatedTime: currentElapsed };
         }
         return sw;
       })
     );
   };
 
-
   const handleResetStopwatch = (id: string) => {
     reachedTargetGoals.current.delete(id);
+
+    // Find the target stopwatch to compute elapsed time before resetting
+    const targetSw = stopwatches.find((sw) => sw.id === id);
+    if (targetSw) {
+      const totalElapsed = getStopwatchElapsed(targetSw, Date.now());
+      if (totalElapsed > 1000) {
+        const entry: ClockHistoryEntry = {
+          id: `history-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          clockId: targetSw.id,
+          clockName: targetSw.name,
+          clockType: 'stopwatch',
+          color: targetSw.color,
+          startedAt: targetSw.createdAt,
+          completedAt: Date.now(),
+          durationMs: targetSw.targetGoalMs || totalElapsed,
+          elapsedMs: totalElapsed,
+          status: 'stopped',
+          targetGoalMs: targetSw.targetGoalMs,
+          isTargetReached: targetSw.targetGoalMs ? totalElapsed >= targetSw.targetGoalMs : undefined,
+          laps: [...targetSw.laps],
+        };
+
+        setClockHistory((prev) => {
+          const isDup = prev.some(
+            (item) => item.clockId === targetSw.id && Math.abs(item.completedAt - entry.completedAt) < 2000
+          );
+          if (isDup) return prev;
+          const updated = [entry, ...prev];
+          saveClockHistory(updated);
+          return updated;
+        });
+      }
+    }
+
     setStopwatches((prev) =>
       prev.map((sw) =>
         sw.id === id ? { ...sw, isRunning: false, startedAt: null, accumulatedTime: 0, laps: [] } : sw
@@ -822,6 +838,7 @@ export default function App() {
   // ==========================================
   const handleStartInterval = (id: string) => {
     backgroundNotificationService.requestNotificationPermission();
+    firedIntervalIds.current.delete(id);
     setIntervals((prev) =>
       prev.map((inv) => (inv.id === id ? { ...inv, isRunning: true, startedAt: Date.now() } : inv))
     );
@@ -840,6 +857,7 @@ export default function App() {
   };
 
   const handleResetInterval = (id: string) => {
+    firedIntervalIds.current.delete(id);
     setIntervals((prev) =>
       prev.map((inv) => {
         if (inv.id === id) {

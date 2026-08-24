@@ -235,6 +235,11 @@ export function saveClockHistory(history: import('../types').ClockHistoryEntry[]
 
 export function addClockHistoryEntry(entry: import('../types').ClockHistoryEntry) {
   const current = loadClockHistory();
+  // Deduplication guard: ignore entries for the same clock within 2 seconds
+  const isDuplicate = current.some(
+    (item) => item.clockId === entry.clockId && Math.abs(item.completedAt - entry.completedAt) < 2000
+  );
+  if (isDuplicate) return current;
   const updated = [entry, ...current];
   saveClockHistory(updated);
   return updated;

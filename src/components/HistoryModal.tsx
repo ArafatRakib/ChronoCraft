@@ -278,7 +278,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                 className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-semibold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Export CSV</span>
+                <span>{selectedIds.size > 0 ? `Export Selected CSV (${selectedIds.size})` : 'Export CSV'}</span>
               </button>
 
               <button
@@ -287,9 +287,14 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({
                 className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 text-slate-700 dark:text-slate-200 font-semibold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? 'Copied!' : 'Copy Summary'}</span>
+                <span>
+                  {copied
+                    ? 'Copied!'
+                    : selectedIds.size > 0
+                    ? `Copy Selected (${selectedIds.size})`
+                    : 'Copy Summary'}
+                </span>
               </button>
-
               {clockIdFilter ? (
                 <button
                   onClick={() => {
