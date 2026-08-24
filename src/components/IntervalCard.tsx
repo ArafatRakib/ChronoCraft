@@ -40,6 +40,7 @@ interface IntervalCardProps {
     intervalConfig?: TimerPreset['intervalConfig']
   ) => void;
   onEditClock?: (interval: IntervalTimerItem) => void;
+  onOpenHistory?: (clockId: string, clockName: string) => void;
   onDelete: (id: string) => void;
   onOpenFocus?: (id: string) => void;
   isCompact?: boolean;
@@ -58,6 +59,7 @@ export const IntervalCard: React.FC<IntervalCardProps> = ({
   onToggleVoice,
   onSaveAsPreset,
   onEditClock,
+  onOpenHistory,
   onDelete,
   onOpenFocus,
   isCompact = false,
@@ -412,7 +414,20 @@ export const IntervalCard: React.FC<IntervalCardProps> = ({
                     <span>Save as Preset</span>
                   </button>
                 )}
-
+                
+                {onOpenHistory && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      onOpenHistory(interval.id, interval.name);
+                    }}
+                    className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer"
+                  >
+                    <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Clock History Log</span>
+                  </button>
+                )}
+                
                 <button
                   onClick={() => {
                     setShowMenu(false);

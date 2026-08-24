@@ -38,6 +38,7 @@ interface StopwatchCardProps {
   onDelete: (id: string) => void;
   onOpenFocus: (id: string) => void;
   onOpenAnalytics?: (id: string) => void;
+  onOpenHistory?: (clockId: string, clockName: string) => void;
   onSaveAsPreset?: (name: string, durationMs: number, color: ColorName) => void;
   onEditClock?: (stopwatch: StopwatchItem) => void;
   isCompact?: boolean;
@@ -56,6 +57,7 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
   onDelete,
   onOpenFocus,
   onOpenAnalytics,
+  onOpenHistory,
   onSaveAsPreset,
   onEditClock,
   isCompact = false,
@@ -418,6 +420,19 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
                 >
                   <BarChart3 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                   <span>Lap Analytics & CSV</span>
+                </button>
+              )}
+
+              {onOpenHistory && (
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    onOpenHistory(stopwatch.id, stopwatch.name);
+                  }}
+                  className="w-full px-2.5 py-1.5 text-left rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 flex items-center gap-2 cursor-pointer"
+                >
+                  <Clock className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <span>Clock History Log</span>
                 </button>
               )}
 

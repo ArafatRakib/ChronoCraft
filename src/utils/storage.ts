@@ -5,6 +5,8 @@ const STOPWATCHES_KEY = 'chrono_stopwatches_v1';
 const TIMERS_KEY = 'chrono_timers_v1';
 const INTERVALS_KEY = 'chrono_intervals_v1';
 const CUSTOM_PRESETS_KEY = 'chrono_custom_presets_v1';
+const HISTORY_KEY = 'chrono_clock_history_v1';
+const MAX_HISTORY_ENTRIES = 500;
 const THEME_KEY = 'chrono_theme_v1';
 const WAKELOCK_PREF_KEY = 'chrono_wakelock_pref_v1';
 const VOICE_PREF_KEY = 'chrono_voice_pref_v1';
@@ -206,6 +208,59 @@ export function saveCustomPresets(items: TimerPreset[]) {
   } catch (e) {
     console.error('Failed to save custom presets', e);
   }
+}
+
+export function loadClockHistory(): import('../types').ClockHistoryEntry[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (raw === null) return [];
+    const items = JSON.parse(raw);
+    if (!Array.isArray(items)) return [];
+    return items;
+  } catch {
+    return [];
+  }
+}
+
+export function saveClockHistory(history: import('../types').ClockHistoryEntry[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const capped = history.slice(0, MAX_HISTORY_ENTRIES);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(capped));
+  } catch (e) {
+    console.error('Failed to save clock history', e);
+  }
+}
+
+export function addClockHistoryEntry(entry: import('../types').ClockHistoryEntry) {
+  const current = loadClockHistory();
+  const updated = [entry, ...current];
+  saveClockHistory(updated);
+  return updated;
+}
+
+export function clearClockHistory() {
+  if (typeof window === 'undefined') return [];
+  try {
+    localStorage.removeItem(HISTORY_KEY);
+  } catch {}
+  return [];
+}
+
+export function deleteHistoryEntriesByIds(ids: string[]): import('../types').ClockHistoryEntry[] {
+  const current = loadClockHistory();
+  const idSet = new Set(ids);
+  const updated = current.filter((entry) => !idSet.has(entry.id));
+  saveClockHistory(updated);
+  return updated;
+}
+
+export function deleteClockHistoryByClockId(clockId: string): import('../types').ClockHistoryEntry[] {
+  const current = loadClockHistory();
+  const updated = current.filter((entry) => entry.clockId !== clockId);
+  saveClockHistory(updated);
+  return updated;
 }
 
 export function loadWakeLockPreference(): boolean {

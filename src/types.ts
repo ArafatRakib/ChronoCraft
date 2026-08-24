@@ -112,3 +112,24 @@ export interface TimerPreset {
     }[];
   };
 }
+
+export interface ClockHistoryEntry {
+  id: string;
+  clockId: string;
+  clockName: string;
+  clockType: 'stopwatch' | 'timer' | 'interval';
+  color: ColorName;
+  startedAt: number;
+  completedAt: number;
+  durationMs: number; // Set duration or total elapsed time
+  elapsedMs: number; // Actual time spent
+  status: 'completed' | 'stopped' | 'dismissed';
+  // Stopwatch specific fields
+  targetGoalMs?: number;
+  isTargetReached?: boolean;
+  laps?: LapItem[];
+  // HIIT / Interval specific fields
+  completedRounds?: number;
+  totalRounds?: number;
+  phasesExecuted?: number;
+}

@@ -12,7 +12,8 @@ import {
   ActiveTab, 
   ColorName, 
   SoundPreset, 
-  TimerPreset 
+  TimerPreset,
+  ClockHistoryEntry
 } from './types';
 import { 
   loadStopwatches, 
@@ -31,6 +32,12 @@ import {
   saveGlobalSoundPreference,
   loadGlobalSoundRepeatPreference,
   saveGlobalSoundRepeatPreference,
+  loadClockHistory,
+  saveClockHistory,
+  addClockHistoryEntry,
+  clearClockHistory,
+  deleteHistoryEntriesByIds,
+  deleteClockHistoryByClockId,
   getStopwatchElapsed, 
   getTimerRemaining,
   getIntervalState
@@ -52,6 +59,7 @@ import { FocusModal } from './components/FocusModal';
 import { PresetsModal } from './components/PresetsModal';
 import { LapAnalyticsModal } from './components/LapAnalyticsModal';
 import { SettingsModal } from './components/SettingsModal';
+import { HistoryModal } from './components/HistoryModal';
 import { EmptyState } from './components/EmptyState';
 import { ColorFilterDropdown } from './components/ColorFilterDropdown';
 import { 
@@ -133,7 +141,8 @@ export default function App() {
 
   // 4. Custom Presets State
   const [customPresets, setCustomPresets] = useState<TimerPreset[]>(() => loadCustomPresets());
-
+  // 5. Clock Run History State
+  const [clockHistory, setClockHistory] = useState<ClockHistoryEntry[]>(() => loadClockHistory());
   // Preferences & Layout
   const [wakeLockPref, setWakeLockPref] = useState<boolean>(() => loadWakeLockPreference());
   const [wakeLockActive, setWakeLockActive] = useState<boolean>(false);
@@ -154,6 +163,8 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [analyticsStopwatchId, setAnalyticsStopwatchId] = useState<string | null>(null);
+  const [isHistoryOpen, setIsSettingsHistoryOpen] = useState(false);
+  const [historyClockFilter, setHistoryClockFilter] = useState<{ id: string; name: string } | null>(null);
 
   // Current timestamp tick for UI updates
   const [now, setNow] = useState(Date.now());
@@ -342,6 +353,24 @@ export default function App() {
                   }
                 }
               }
+                // Record completion in history log
+                const historyEntry: ClockHistoryEntry = {
+                  id: `history-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                  clockId: t.id,
+                  clockName: t.name,
+                  clockType: 'timer',
+                  color: t.color,
+                  startedAt: t.startedAt || currentNow - t.duration,
+                  completedAt: currentNow,
+                  durationMs: t.duration,
+                  elapsedMs: t.duration,
+                  status: 'completed',
+                };
+                setClockHistory((prev) => {
+                  const updated = [historyEntry, ...prev];
+                  saveClockHistory(updated);
+                  return updated;
+                });
 
               return {
                 ...t,
@@ -400,6 +429,26 @@ export default function App() {
                   speechManager.speak(`Workout completed! Great job!`);
                 }
               }
+              // Record HIIT completion history
+              const historyEntry: ClockHistoryEntry = {
+                id: `history-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                clockId: inv.id,
+                clockName: inv.name,
+                clockType: 'interval',
+                color: inv.color,
+                startedAt: inv.startedAt || currentNow,
+                completedAt: currentNow,
+                durationMs: inv.phases.reduce((acc, p) => acc + p.durationMs, 0) * inv.totalRounds,
+                elapsedMs: inv.phases.reduce((acc, p) => acc + p.durationMs, 0) * inv.totalRounds,
+                status: 'completed',
+                completedRounds: inv.totalRounds,
+                totalRounds: inv.totalRounds,
+              };
+              setClockHistory((prev) => {
+                const updated = [historyEntry, ...prev];
+                saveClockHistory(updated);
+                return updated;
+              });
               return {
                 ...inv,
                 isRunning: false,
@@ -462,6 +511,31 @@ export default function App() {
     saveCustomPresets(customPresets);
   }, [customPresets]);
 
+// File: src/App.tsx
+  const handleOpenClockHistory = (clockId: string, clockName: string) => {
+    setHistoryClockFilter({ id: clockId, name: clockName });
+    setIsSettingsHistoryOpen(true);
+  };
+
+  const handleOpenGlobalHistory = () => {
+    setHistoryClockFilter(null);
+    setIsSettingsHistoryOpen(true);
+  };
+  const handleDeleteHistoryEntries = (ids: string[]) => {
+    const updated = deleteHistoryEntriesByIds(ids);
+    setClockHistory(updated);
+  };
+
+  const handleDeleteClockHistory = (clockId: string) => {
+    const updated = deleteClockHistoryByClockId(clockId);
+    setClockHistory(updated);
+  };
+
+  const handleClearAllHistory = () => {
+    const updated = clearClockHistory();
+    setClockHistory(updated);
+  };
+  
   // ==========================================
   // STOPWATCH ACTIONS
   // ==========================================
@@ -475,14 +549,37 @@ export default function App() {
   const handlePauseStopwatch = (id: string) => {
     setStopwatches((prev) =>
       prev.map((sw) => {
-        if (sw.id === id && sw.isRunning && sw.startedAt) {
-          const currentElapsed = sw.accumulatedTime + (Date.now() - sw.startedAt);
-          return { ...sw, isRunning: false, startedAt: null, accumulatedTime: currentElapsed };
+        if (sw.id === id) {
+          const totalElapsed = getStopwatchElapsed(sw, Date.now());
+          if (totalElapsed > 1000) {
+            const entry: ClockHistoryEntry = {
+              id: `history-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+              clockId: sw.id,
+              clockName: sw.name,
+              clockType: 'stopwatch',
+              color: sw.color,
+              startedAt: sw.createdAt,
+              completedAt: Date.now(),
+              durationMs: sw.targetGoalMs || totalElapsed,
+              elapsedMs: totalElapsed,
+              status: 'stopped',
+              targetGoalMs: sw.targetGoalMs,
+              isTargetReached: sw.targetGoalMs ? totalElapsed >= sw.targetGoalMs : undefined,
+              laps: [...sw.laps],
+            };
+            setClockHistory((prev) => {
+              const updated = [entry, ...prev];
+              saveClockHistory(updated);
+              return updated;
+            });
+          }
+          return { ...sw, isRunning: false, startedAt: null, accumulatedTime: 0, laps: [] };
         }
         return sw;
       })
     );
   };
+
 
   const handleResetStopwatch = (id: string) => {
     reachedTargetGoals.current.delete(id);
@@ -1286,6 +1383,7 @@ export default function App() {
         onToggleMute={() => setIsMuted(!isMuted)}
         onOpenPresets={() => setIsPresetsOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenHistory={handleOpenGlobalHistory}
         wakeLockActive={wakeLockActive}
         onToggleWakeLock={() => setWakeLockPref(!wakeLockPref)}
         voiceEnabled={voiceEnabled}
@@ -1511,6 +1609,7 @@ export default function App() {
                         setEditingClock(swItem);
                         setIsCreateOpen(true);
                       }}
+                      onOpenHistory={handleOpenClockHistory}
                       isCompact={viewLayout === 'compact'}
                     />
                   ))}
@@ -1569,6 +1668,7 @@ export default function App() {
                           setEditingClock(timerItem);
                           setIsCreateOpen(true);
                         }}
+                        onOpenHistory={handleOpenClockHistory}
                         onDelete={handleDeleteTimer}
                         onOpenFocus={setFocusId}
                         isCompact={viewLayout === 'compact'}
@@ -1626,6 +1726,7 @@ export default function App() {
                           setEditingClock(intervalItem);
                           setIsCreateOpen(true);
                         }}
+                        onOpenHistory={handleOpenClockHistory}
                         onDelete={handleDeleteInterval}
                         onOpenFocus={setFocusId}
                         isCompact={viewLayout === 'compact'}
@@ -1650,7 +1751,6 @@ export default function App() {
       <CreateModal
         key={`${isCreateOpen ? 'open' : 'closed'}-${createInitialType}`}
         isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
         initialType={createInitialType}
         defaultSound={globalSound}
         defaultSoundRepeat={globalSoundRepeat}
@@ -1712,7 +1812,22 @@ export default function App() {
           stopwatch={analyticsStopwatch}
         />
       )}
-
+      
+      {/* Run History Modal */}
+      <HistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => {
+          setIsSettingsHistoryOpen(false);
+          setHistoryClockFilter(null);
+        }}
+        history={clockHistory}
+        clockIdFilter={historyClockFilter?.id}
+        clockNameFilter={historyClockFilter?.name}
+        onDeleteEntries={handleDeleteHistoryEntries}
+        onDeleteClockHistory={handleDeleteClockHistory}
+        onClearAllHistory={handleClearAllHistory}
+      />
+      
       {/* Fullscreen Focus Modal */}
       {focusId && (focusedStopwatch || focusedTimer || focusedInterval) && (
         <FocusModal
