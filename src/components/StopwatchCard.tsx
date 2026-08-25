@@ -764,8 +764,12 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
                     type="number"
                     min="0"
                     max="59"
-                    value={targetMinInput}
-                    onChange={(e) => setTargetMinInput(Math.max(0, parseInt(e.target.value) || 0))}
+                    value={targetMinInput === 0 ? '' : targetMinInput}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : Math.max(0, Math.min(59, parseInt(e.target.value, 10) || 0));
+                      setTargetMinInput(val);
+                    }}
+                    placeholder="0"
                     className="w-full py-1.5 text-center text-sm font-mono font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
                   />
                 </div>
@@ -775,11 +779,16 @@ export const StopwatchCard: React.FC<StopwatchCardProps> = ({
                     type="number"
                     min="0"
                     max="59"
-                    value={targetSecInput}
-                    onChange={(e) => setTargetSecInput(Math.max(0, parseInt(e.target.value) || 0))}
+                    value={targetSecInput === 0 ? '' : targetSecInput}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : Math.max(0, Math.min(59, parseInt(e.target.value, 10) || 0));
+                      setTargetSecInput(val);
+                    }}
+                    placeholder="0"
                     className="w-full py-1.5 text-center text-sm font-mono font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
                   />
                 </div>
+
               </div>
 
               <div className="flex items-center gap-2 pt-2">
