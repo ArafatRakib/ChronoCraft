@@ -72,30 +72,73 @@ Out of frustration and necessity, I built ChronoCraft on the spot to manage mult
 - 🌙 **OLED Dark & Crisp Light Modes** — Easy on your battery and easier on your eyes at 2 AM.
 
 ---
-## 🖥️ Screenshots 
-<!--
-<details>
-  <summary>📸 Click to view App Screenshots</summary>
+## 🖥️ Screenshots
+
+<details open>
+  <summary><b>📱 Mobile View (Dark Mode)</b></summary>
   <br />
   <p align="center">
-    <img src="assets/screenshots/main_page.jpg" width="240" />
-    <img src="assets/screenshots/timer_focus_mode.jpg" width="240" />
-    <img src="assets/screenshots/stopwatch_focus_mode.jpg" width="240" />
-    <img src="assets/screenshots/stopwatch_focus_with_laps.jpg" width="240" />
-    <img src="assets/screenshots/filters.jpg" width="240" />
-    <img src="assets/screenshots/lap_history_in_focus.jpg" width="240" />
+    <img src="assets/screenshots/Phone-Portrait_dark_01_main_dashboard.png" width="240" alt="Main Dashboard" />
+    <img src="assets/screenshots/Phone-Portrait_dark_07a_focus_mode.png" width="240" alt="Focus Mode" />
+    <img src="assets/screenshots/Phone-Portrait_dark_02a_create_timer_modal.png" width="240" alt="Create Timer" />
+    <img src="assets/screenshots/Phone-Portrait_dark_02b_create_stopwatch_modal.png" width="240" alt="Create Stopwatch" />
+    <img src="assets/screenshots/Phone-Portrait_dark_02c_create_interval_builder.png" width="240" alt="Interval Builder" />
+    <img src="assets/screenshots/Phone-Portrait_dark_03_presets_library.png" width="240" alt="Presets Library" />
+    <img src="assets/screenshots/Phone-Portrait_dark_04_history_log.png" width="240" alt="History Log" />
+    <img src="assets/screenshots/Phone-Portrait_dark_05_settings_audio.png" width="240" alt="Audio Settings" />
+    <img src="assets/screenshots/Phone-Portrait_dark_08_compact_layout.png" width="240" alt="Compact View" />
   </p>
 </details>
--->
 
-<p align="center">
-  <img src="assets/screenshots/main_page.jpg" width="240" />
-  <img src="assets/screenshots/timer_focus_mode.jpg" width="240" />
-  <img src="assets/screenshots/stopwatch_focus_mode.jpg" width="240" />
-  <img src="assets/screenshots/stopwatch_focus_with_laps.jpg" width="240" />
-  <img src="assets/screenshots/filters.jpg" width="240" />
-  <img src="assets/screenshots/lap_history_in_focus.jpg" width="240" />
-</p>
+<details>
+  <summary><b>📱 Mobile View (Light Mode)</b></summary>
+  <br />
+  <p align="center">
+    <img src="assets/screenshots/Phone-Portrait_light_01_main_dashboard.png" width="240" alt="Main Dashboard Light" />
+    <img src="assets/screenshots/Phone-Portrait_light_07a_focus_mode.png" width="240" alt="Focus Mode Light" />
+    <img src="assets/screenshots/Phone-Portrait_light_02a_create_timer_modal.png" width="240" alt="Create Timer Light" />
+    <img src="assets/screenshots/Phone-Portrait_light_02b_create_stopwatch_modal.png" width="240" alt="Create Stopwatch Light" />
+    <img src="assets/screenshots/Phone-Portrait_light_02c_create_interval_builder.png" width="240" alt="Interval Builder Light" />
+    <img src="assets/screenshots/Phone-Portrait_light_03_presets_library.png" width="240" alt="Presets Library Light" />
+    <img src="assets/screenshots/Phone-Portrait_light_04_history_log.png" width="240" alt="History Log Light" />
+    <img src="assets/screenshots/Phone-Portrait_light_05_settings_audio.png" width="240" alt="Audio Settings Light" />
+    <img src="assets/screenshots/Phone-Portrait_light_08_compact_layout.png" width="240" alt="Compact View Light" />
+  </p>
+</details>
+
+<details>
+  <summary><b>💻 Tablet View (10" Landscape - Dark)</b></summary>
+  <br />
+  <p align="center">
+    <img src="assets/screenshots/Tablet-10inch_dark_01_main_dashboard.png" width="400" alt="Tablet Dashboard Dark" />
+    <img src="assets/screenshots/Tablet-10inch_dark_07a_focus_mode.png" width="400" alt="Tablet Focus Mode Dark" />
+    <img src="assets/screenshots/Tablet-10inch_dark_02a_create_timer_modal.png" width="400" alt="Tablet Create Timer Dark" />
+    <img src="assets/screenshots/Tablet-10inch_dark_02b_create_stopwatch_modal.png" width="400" alt="Tablet Create Stopwatch Dark" />
+    <img src="assets/screenshots/Tablet-10inch_dark_02c_create_interval_builder.png" width="400" alt="Tablet Interval Builder Dark" />
+    <img src="assets/screenshots/Tablet-10inch_dark_03_presets_library.png" width="400" alt="Tablet Presets Dark" />
+    <img src="assets/screenshots/Tablet-10inch_dark_04_history_log.png" width="400" alt="Tablet History Dark" />
+    <img src="assets/screenshots/Tablet-10inch_dark_05_settings_audio.png" width="400" alt="Tablet Settings Dark" />
+    <img src="assets/screenshots/Tablet-10inch_dark_08_compact_layout.png" width="400" alt="Tablet Compact Dark" />
+    <img src="assets/screenshots/Tablet-10inch_dark_09_color_filter.png" width="400" alt="Tablet Color Filter Dark" />
+  </p>
+</details>
+
+<details>
+  <summary><b>💻 Tablet View (10" Landscape - Light)</b></summary>
+  <br />
+  <p align="center">
+    <img src="assets/screenshots/Tablet-10inch_light_01_main_dashboard.png" width="400" alt="Tablet Dashboard Light" />
+    <img src="assets/screenshots/Tablet-10inch_light_07a_focus_mode.png" width="400" alt="Tablet Focus Mode Light" />
+    <img src="assets/screenshots/Tablet-10inch_light_02a_create_timer_modal.png" width="400" alt="Tablet Create Timer Light" />
+    <img src="assets/screenshots/Tablet-10inch_light_02b_create_stopwatch_modal.png" width="400" alt="Tablet Create Stopwatch Light" />
+    <img src="assets/screenshots/Tablet-10inch_light_02c_create_interval_builder.png" width="400" alt="Tablet Interval Builder Light" />
+    <img src="assets/screenshots/Tablet-10inch_light_03_presets_library.png" width="400" alt="Tablet Presets Light" />
+    <img src="assets/screenshots/Tablet-10inch_light_04_history_log.png" width="400" alt="Tablet History Light" />
+    <img src="assets/screenshots/Tablet-10inch_light_05_settings_audio.png" width="400" alt="Tablet Settings Light" />
+    <img src="assets/screenshots/Tablet-10inch_light_08_compact_layout.png" width="400" alt="Tablet Compact Light" />
+    <img src="assets/screenshots/Tablet-10inch_light_09_color_filter.png" width="400" alt="Tablet Color Filter Light" />
+  </p>
+</details>
 
 ---
 
