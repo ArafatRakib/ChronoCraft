@@ -9,17 +9,17 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ArafatRakib/ChronoCraft/releases/latest"><img src="https://img.shields.io/github/v/release/ArafatRakib/ChronoCraft?style=for-the-badge&color=6366f1&logo=android&logoColor=white" alt="Latest Release" /></a>
+  <a href="https://github.com/ArafatRakib/ChronoCraft/releases/latest"><img src="https://img.shields.io/github/v/release/ArafatRakib/ChronoCraft?style=for-the-badge&color=6366f1&logo=android&logoColor=white&label=Release" alt="Latest Release" /></a>
+  <a href="https://github.com/ArafatRakib/ChronoCraft/releases"><img src="https://img.shields.io/github/downloads/ArafatRakib/ChronoCraft/total?style=for-the-badge&color=22c55e&logo=android&logoColor=white&label=Downloads" alt="Total Downloads" /></a>
+  <a href="https://github.com/ArafatRakib/ChronoCraft/actions/workflows/build-release.yml"><img src="https://img.shields.io/github/actions/workflow/status/ArafatRakib/ChronoCraft/build-release.yml?style=for-the-badge&label=Build" alt="Build Status" /></a>
+  <img src="https://img.shields.io/badge/License-MIT-6366f1?style=for-the-badge" alt="License" />
+</p>
+
+<p align="center">
   <a href="https://github.com/ArafatRakib/ChronoCraft/releases/latest/download/ChronoCraft-latest.apk"><img src="https://img.shields.io/badge/Download-APK-22c55e?style=for-the-badge&logo=android&logoColor=white" alt="Download Latest APK" /></a>
-  <a href="https://github.com/ArafatRakib/ChronoCraft/actions/workflows/build-release.yml"><img src="https://img.shields.io/github/actions/workflow/status/ArafatRakib/ChronoCraft/build-release.yml?style=for-the-badge&label=Build%20Status" alt="Build Status" /></a>
-  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License" />
- <a href="obtainium://app/add?url=https://github.com/ArafatRakib/ChronoCraft">
-  <img src="https://img.shields.io/badge/Obtainium-Add%20App-purple?style=for-the-badge&logo=github" alt="Install via Obtainium" />
-</a>
-  <a href="orionstore://app/chronocraft"><img src="https://img.shields.io/badge/ChronoCraft-Orion%20Store-0052CC?style=for-the-badge&logo=android&logoColor=white" alt="ChronoCraft / Orion Store" /></a>
-  <a href="https://arafatrakib.github.io/ChronoCraft/">
-  <img src="https://img.shields.io/badge/🌐_Try_Web_App-Live_Demo-6366f1?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Live Web Demo" />
-</a>
+  <a href="obtainium://app/add?url=https://github.com/ArafatRakib/ChronoCraft"><img src="https://img.shields.io/badge/Obtainium-Add%20App-8b5cf6?style=for-the-badge&logo=github&logoColor=white" alt="Install via Obtainium" /></a>
+  <a href="orionstore://app/chronocraft"><img src="https://img.shields.io/badge/Orion%20Store-View%20App-0ea5e9?style=for-the-badge&logo=android&logoColor=white" alt="ChronoCraft on Orion Store" /></a>
+  <a href="https://arafatrakib.github.io/ChronoCraft/"><img src="https://img.shields.io/badge/Web%20App-Live%20Demo-f59e0b?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Live Web Demo" /></a>
 </p>
 
 ---
