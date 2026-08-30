@@ -169,12 +169,32 @@ export default function App() {
   // Current timestamp tick for UI updates
   const [now, setNow] = useState(Date.now());
 
+  // Page visibility state for battery saver ticker throttling
+  const [isPageVisible, setIsPageVisible] = useState(
+    typeof document !== 'undefined' ? document.visibilityState === 'visible' : true
+  );
+
   // Refs for tracking transitions and preventing double alerts
   const firedTimerIds = useRef<Set<string>>(new Set());
   const firedIntervalIds = useRef<Set<string>>(new Set());
   const halfwayNotifiedTimers = useRef<Set<string>>(new Set());
   const reachedTargetGoals = useRef<Set<string>>(new Set());
   const lastPhaseKey = useRef<Map<string, string>>(new Map());
+
+  // Track page visibility changes for adaptive power saving
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const visible = document.visibilityState === 'visible';
+      setIsPageVisible(visible);
+      if (visible) {
+        setNow(Date.now());
+        backgroundNotificationService.resetNotificationState();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   // Initialize Capacitor Native Channels on app start
   useEffect(() => {
@@ -283,13 +303,15 @@ export default function App() {
     backgroundNotificationService.update(activeList, true);
   }, [now, stopwatches, timers, intervals]);
   
-  // Main High Precision Ticker Loop (50ms)
+  // Main High Precision Ticker Loop (Dynamic rate: 50ms foreground / 1000ms background)
   useEffect(() => {
+    const tickerSpeed = isPageVisible ? 50 : 1000;
+
     const interval = setInterval(() => {
       const currentNow = Date.now();
       setNow(currentNow);
 
-            // 1. Check Stopwatches for Target Time Goals
+      // 1. Check Stopwatches for Target Time Goals
       stopwatches.forEach((sw) => {
         if (sw.isRunning && sw.targetGoalMs && sw.targetGoalMs > 0) {
           const elapsed = getStopwatchElapsed(sw, currentNow);
@@ -494,10 +516,10 @@ export default function App() {
 
         return hasChanges ? updated : prevIntervals;
       });
-    }, 50);
+    }, tickerSpeed);
 
     return () => clearInterval(interval);
-  }, [isMuted, voiceEnabled, stopwatches]);
+  }, [isMuted, voiceEnabled, stopwatches, isPageVisible]);
 
   // Persist state updates to storage
   useEffect(() => {
