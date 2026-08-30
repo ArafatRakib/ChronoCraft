@@ -1,0 +1,51 @@
+# .github/workflows/track-downloads.yml
+name: Track Release Downloads Periodic Logger
+
+on:
+  schedule:
+    # Runs every 6 hours automatically
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allows manual trigger from Actions tab anytime
+  release:
+    types: [published, edited]
+
+permissions:
+  contents: write # Needed to commit snapshot data back to repository
+
+jobs:
+  track-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch & Log Release Download Stats
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_OWNER: 'ArafatRakib'
+          REPO_NAME: 'ChronoCraft'
+          DATA_FILE: 'data/downloads-history.json'
+        run: |
+          node scripts/track-downloads.mjs
+
+      - name: Commit & Push Updated History
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/downloads-history.json
+          
+          # Only commit if changes exist
+          if git diff --staged --quiet; then
+            echo "No changes in download counts."
+          else
+            git commit -m "chore(stats): update download metrics snapshot [skip ci]"
+            git push origin main
+          fi
