@@ -35,6 +35,11 @@ Want to track your boiling eggs, 25-minute Pomodoro, and gym rest intervals simu
   </a>
 ---
 
+## 📊 Analytics & Download Tracking
+Track live release downloads, OS platform distributions, and historical trajectory metrics for **ChronoCraft** on **[GitStats](https://arafatrakib.github.io/GitStats/?repo=ArafatRakib/ChronoCraft)**:
+[![GitStats Release Analytics](https://img.shields.io/github/downloads/ArafatRakib/ChronoCraft/total?color=indigo&logo=github&style=for-the-badge&label=GitStats%20Downloads)](https://arafatrakib.github.io/GitStats/?repo=ArafatRakib/ChronoCraft)
+> 🚀 **View Real-Time Metrics**: Visit [GitStats for ChronoCraft](https://arafatrakib.github.io/GitStats/?repo=ArafatRakib/ChronoCraft) to inspect cross-platform download breakdowns across Android, iOS, HarmonyOS, Windows, macOS, and Linux.
+
 ## 🧐 Why ChronoCraft?
 
 Most timer apps assume you only live one life at a time:
